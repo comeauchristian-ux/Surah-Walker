@@ -276,11 +276,12 @@ let verseTextByKey = {};
 let verseEngByKey = {};
 const timeOfDayClasses = ["tod-dawn","tod-day","tod-dusk","tod-night"];
 const bgSettings = ["beach","countryside","forest","garden","lakeside","mountain"];
-// Derive a stable base so paths work with or without a trailing slash on GitHub Pages
-const BASE_PATH = location.pathname.endsWith("/")
-  ? location.pathname
-  : `${location.pathname}/`;
-const BG_BASE_PATH = `${BASE_PATH.replace(/\/+$/, "/")}assets/bg`;
+// Derive a stable base so paths work both on GitHub Pages and local dev servers (Live Server)
+const pathName = location.pathname.replace(/\\/g, "/");
+const baseDir = pathName.endsWith("/")
+  ? pathName
+  : pathName.replace(/[^/]+$/, "");
+const BG_BASE_PATH = `${baseDir.replace(/\/+$/, "/")}assets/bg`;
 let chosenSetting = null;
 let chosenTimeOfDay = null;
 
