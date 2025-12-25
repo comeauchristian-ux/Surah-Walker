@@ -21,6 +21,22 @@
       background-repeat: no-repeat;
       background-attachment: fixed;
       color:white;display:flex;align-items:center;justify-content:center;
+      body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  background:
+    radial-gradient(ellipse at center,
+      rgba(0,0,0,.45) 0%,
+      rgba(0,0,0,.25) 45%,
+      rgba(0,0,0,.55) 100%),
+    linear-gradient(
+      rgba(0,0,0,.25),
+      rgba(0,0,0,.25)
+    );
+}
     }
 
     /* Time-of-day hooks (only swap images; no overlays) */
@@ -37,7 +53,7 @@
       background-attachment: fixed;
 }
 
-    .wrap{width:min(1100px, 92vw);height:100vh;position:relative;display:flex;align-items:center;justify-content:center;}
+    .wrap{width:min(1100px, 92vw);height:100vh;position:relative;display:flex;align-items:center;justify-content:center;z-index: 1;}
     .corner{
       position:absolute;top:14px;left:14px;
       font-size:14px;color:var(--muted);
