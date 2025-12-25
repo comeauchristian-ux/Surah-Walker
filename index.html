@@ -21,6 +21,23 @@
       background-repeat: no-repeat;
       background-attachment: fixed;
       color:white;display:flex;align-items:center;justify-content:center;
+      position:relative;
+      overflow:hidden;
+    }
+    /* Slightly blur the background without affecting foreground text */
+    body::after{
+      content:"";
+      position:fixed;
+      inset:-2%;
+      background: var(--bg-img-walk);
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      filter: blur(1px);
+      transform: scale(1.03);
+      z-index:0;
+      pointer-events:none;
     }
 
     /* Time-of-day hooks (only swap images; no overlays) */
@@ -37,7 +54,15 @@
       background-attachment: fixed;
 }
 
-    .wrap{width:min(1100px, 92vw);height:100vh;position:relative;display:flex;align-items:center;justify-content:center;}
+    .wrap{
+      width:min(1100px, 92vw);
+      height:100vh;
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:1; /* keep content above blurred background layer */
+    }
     .corner{
       position:absolute;top:14px;left:14px;
       font-size:14px;color:var(--muted);
@@ -360,8 +385,8 @@ function speakArabic(text) {
   let chapterNumber = null;
   let wordsFlat = []; // [{arabic, translit, meaning, verse_key, wIndexInVerse, wCountInVerse, globalIndex, globalTotal}]
   let idx = 0;
-  let showPron = false;
-  let showMean = false;
+  let showPron = true;
+  let showMean = true;
   let started = false;
   
   function toggleAudio(ev){
@@ -693,8 +718,8 @@ function getApproxMeaning(cur) {
     corner.style.display = "block";
     reader.style.display = "block";
     idx = 0;
-    showPron = false;
-    showMean = false;
+    showPron = true;
+    showMean = true;
     render();
 	const cur = wordsFlat[idx];
 if (cur) speakArabic(cur.arabic);
