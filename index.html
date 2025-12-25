@@ -51,14 +51,14 @@
       text-align:center;gap:18px;
       user-select:none;
       max-width:86vw;
-      padding:12px 8px;
-      padding-bottom:180px; /* ensure center content stays above bottom controls */
+      padding:48px 1px;
+      padding-bottom:160px; /* leave room for bottom controls while lowering text into the plate */
     }
     /* Reading plate to keep text legible */
     .center::before{
       content:"";
       position:absolute;
-      inset:22% 8%;
+      inset:1% 0% 30% 0%; /* trim the bottom so the plate doesn’t run to the edge */
       border-radius:28px;
       background:rgba(0,0,0,0.30);
       border:1px solid rgba(255,255,255,0.12);
@@ -72,7 +72,10 @@
     }
 
     @media (min-width:1000px){
-      .center{ padding-bottom:220px; }
+      .center{
+        padding-top:72px;
+        padding-bottom:200px;
+      }
     }
     .arabic{
       font-size:56px;line-height:1.25;
