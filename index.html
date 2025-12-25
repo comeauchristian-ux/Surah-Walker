@@ -7,7 +7,7 @@
   <style>
     :root{
       --bg:#064e3b;        /* dark emerald */
-      --gold:#d4af37;      /* gold */
+      --gold:#ffd54a;      /* gold */
       --muted:#cbd5e1;     /* slate-ish */
       --muted2:#94a3b8;
     }
@@ -58,11 +58,11 @@
     .center::before{
       content:"";
       position:absolute;
-      inset:1% 0% 30% 0%; /* trim the bottom so the plate doesn’t run to the edge */
+      inset:0% 0% 30% 0%; /* trim the bottom so the plate doesn’t run to the edge */
       border-radius:28px;
       background:rgba(0,0,0,0.30);
       border:1px solid rgba(255,255,255,0.12);
-      backdrop-filter:blur(8px);
+      backdrop-filter:blur(3px);
       pointer-events:none;
       z-index:0;
     }
