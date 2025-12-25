@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Surah Walk — Bismillah Artwork Prelude</title>
+
+<style>
+  :root{
+    --bg:#053b2f;
+    --bg2:#042f26;
+    --gold:#f1d38a;
+    --muted:#cfe7de;
+    --muted2:#9fc7bb;
+    --glass:rgba(255,255,255,0.08);
+    --shadow:rgba(0,0,0,0.28);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%; margin:0;}
+  body{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background:
+      radial-gradient(1000px 700px at 30% 15%, rgba(20,140,105,.35), transparent 60%),
+      linear-gradient(180deg, var(--bg), var(--bg2));
+    color:var(--muted);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .corner{
+    position: fixed;
+    top: env(safe-area-inset-top);
+    right: env(safe-area-inset-right);
+    padding: 12px 14px;
+    font-size: 13px;
+    color: rgba(159,199,187,0.95);
+    letter-spacing: 0.2px;
+    user-select:none;
+    opacity: 0;
+    transition: opacity 140ms ease-out;
+    pointer-events:none;
+  }
+  .corner.show{ opacity: 1; }
+
+  .app{
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+  }
+
+  .card{
+    width:min(560px, 100%);
+    border-radius:28px;
+    background:var(--glass);
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 20px 40px var(--shadow);
+    padding:26px 20px 22px;
+    text-align:center;
+  }
+
+  /* Artwork */
+  .artWrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 10px 6px 6px;
+    min-height: 180px;
+  }
+  .art{
+    max-width: 100%;
+    height: auto;
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,0.25));
+  }
+  .artCredit{
+    margin-top: 10px;
+    font-size: 12px;
+    color: rgba(159,199,187,.9);
+    line-height: 1.35;
+  }
+
+  /* Word mode */
+  .word{
+    direction:rtl;
+    unicode-bidi:isolate;
+    font-size:clamp(46px, 9vw, 72px);
+    line-height:1.15;
+    color:var(--gold);
+    margin-bottom:12px;
+    text-shadow:0 1px 0 rgba(0,0,0,.35);
+  }
+
+  .sub{
+    min-height:44px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    font-size:15px;
+  }
+  .pron{ color:var(--muted); }
+  .en{ color:var(--muted2); }
+
+  .hint{
+    margin-top:14px;
+    font-size:12px;
+    color:rgba(159,199,187,.9);
+  }
+
+  .tap{
+    position:fixed;
+    inset:0;
+  }
+
+  .fade{
+    animation:fadeIn .18s ease-out;
+  }
+  @keyframes fadeIn{
+    from{opacity:.6; transform:translateY(2px);}
+    to{opacity:1; transform:none;}
+  }
+</style>
+</head>
+
+<body>
+  <div class="corner" id="cornerRef">—</div>
+
+  <div class="app">
+    <div class="card fade" id="card">
+      <!-- We swap between ART mode and WORD mode -->
+      <div id="artMode">
+        <div class="artWrap">
+          <img
+            class="art"
+            alt="Bismillah calligraphy"
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Bismillah_Calligraphy23.svg/1024px-Bismillah_Calligraphy23.svg.png"
+          />
+        </div>
+        <div class="artCredit">
+          CC0 calligraphy from Wikimedia Commons (author: Warraich Sahib).<br/>
+          Tap to begin.
+        </div>
+      </div>
+
+      <div id="wordMode" style="display:none;">
+        <div class="word" id="ar">—</div>
+        <div class="sub">
+          <div class="pron" id="pron"></div>
+          <div class="en" id="en"></div>
+        </div>
+        <div class="hint">tap anywhere</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tap" id="tap" aria-label="tap anywhere"></div>
+
+<script>
+/**
+ * Demo settings
+ * - Surah 9 skips Bismillah artwork.
+ * - Replace placeholder ayahs later with real Tanzil text + tokenization.
+ */
+const SURAH_ID = 45; // try 9 to skip the artwork prelude
+
+// Placeholder ayahs (replace later)
+const AYAHS = [
+  { ayah: 1, words: [
+    { ar:"إِنَّ", pron:"inna", en:"indeed" },
+    { ar:"هَٰذَا", pron:"hādhā", en:"this" },
+    { ar:"أَمْرٌ", pron:"amr(un)", en:"matter" },
+    { ar:"بَيِّنٌ", pron:"bayyin(un)", en:"clear" }
+  ]},
+  { ayah: 2, words: [
+    { ar:"وَ", pron:"wa", en:"and" },
+    { ar:"هُوَ", pron:"huwa", en:"He / It is" },
+    { ar:"قَرِيبٌ", pron:"qarīb(un)", en:"near" }
+  ]}
+];
+
+let show = true;
+
+// Modes: "ART" (bismillah artwork), "READING"
+let mode = (SURAH_ID === 9) ? "READING" : "ART";
+
+// Positions
+let ayahIndex = 0;
+let wordIndex = 0; // 0..currentAyah.words.length
+
+const elCorner = document.getElementById("cornerRef");
+const elAr = document.getElementById("ar");
+const elPron = document.getElementById("pron");
+const elEn = document.getElementById("en");
+const elCard = document.getElementById("card");
+const tap = document.getElementById("tap");
+
+const artMode = document.getElementById("artMode");
+const wordMode = document.getElementById("wordMode");
+
+function animate(){
+  elCard.classList.remove("fade");
+  void elCard.offsetWidth;
+  elCard.classList.add("fade");
+}
+
+function render(){
+  // Swap layouts
+  if (mode === "ART") {
+    artMode.style.display = "";
+    wordMode.style.display = "none";
+    elCorner.classList.remove("show");
+    return;
+  }
+
+  artMode.style.display = "none";
+  wordMode.style.display = "";
+  elCorner.classList.add("show");
+
+  const a = AYAHS[ayahIndex];
+  elCorner.textContent = `${SURAH_ID}:${a.ayah}`;
+
+  if (wordIndex === 0){
+    elAr.textContent = "—";
+    elPron.textContent = "";
+    elEn.textContent = "";
+    return;
+  }
+
+  const w = a.words[wordIndex - 1];
+  elAr.textContent = w.ar;
+  elPron.textContent = show ? (w.pron || "") : "";
+  elEn.textContent = show ? (w.en || "") : "";
+
+  animate();
+}
+
+function nextReading(){
+  const a = AYAHS[ayahIndex];
+
+  if (wordIndex < a.words.length) {
+    wordIndex++;
+    render();
+    return;
+  }
+
+  if (ayahIndex < AYAHS.length - 1) {
+    ayahIndex++;
+    wordIndex = 0; // breath at ayah boundary
+    render();
+    return;
+  }
+
+  // end of surah (demo): restart
+  mode = (SURAH_ID === 9) ? "READING" : "ART";
+  ayahIndex = 0;
+  wordIndex = 0;
+  render();
+}
+
+function next(){
+  if (mode === "ART") {
+    mode = "READING";
+    ayahIndex = 0;
+    wordIndex = 0;
+    render();
+    return;
+  }
+  nextReading();
+}
+
+tap.addEventListener("click", next);
+render();
+</script>
+</body>
+</html>

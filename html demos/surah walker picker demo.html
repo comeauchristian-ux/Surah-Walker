@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Surah Walk</title>
+<style>
+  :root{
+    --bg:#053b2f;
+    --bg2:#042f26;
+    --gold:#f1d38a;
+    --muted:#cfe7de;
+    --muted2:#9fc7bb;
+    --glass:rgba(255,255,255,0.08);
+    --shadow:rgba(0,0,0,0.28);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%; margin:0;}
+  body{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background:
+      radial-gradient(1000px 700px at 30% 15%, rgba(20,140,105,.35), transparent 60%),
+      linear-gradient(180deg, var(--bg), var(--bg2));
+    color:var(--muted);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .screen{ height:100%; display:flex; flex-direction:column; }
+  .wrap{
+    height:100%;
+    padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .header{
+    padding-top:10px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .title{
+    font-size:34px;
+    letter-spacing:.2px;
+    color:var(--gold);
+    text-shadow:0 1px 0 rgba(0,0,0,.35);
+  }
+  .subtitle{
+    margin-top:2px;
+    font-size:13px;
+    color:rgba(159,199,187,.95);
+  }
+  .btnLink{
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    color:var(--muted);
+    padding:10px 12px;
+    border-radius:14px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .btnLink:hover{ background:rgba(255,255,255,.10); }
+
+  .search{
+    width:100%;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    padding:12px;
+    color:var(--muted);
+    outline:none;
+    font-size:14px;
+  }
+  .search::placeholder{ color:rgba(159,199,187,.8); }
+
+  .list{
+    flex:1;
+    overflow:auto;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.05);
+    box-shadow:0 18px 40px var(--shadow);
+  }
+
+  .row{
+    display:flex;
+    gap:12px;
+    padding:14px;
+    border-bottom:1px solid rgba(255,255,255,.07);
+    cursor:pointer;
+    align-items:flex-start;
+  }
+  .row:hover{ background:rgba(255,255,255,.06); }
+
+  .num{
+    width:34px;
+    text-align:right;
+    font-variant-numeric: tabular-nums;
+    color:rgba(159,199,187,.95);
+    padding-top:2px;
+    flex:0 0 auto;
+  }
+
+  .names{
+    min-width:0;
+    flex:1 1 auto;
+  }
+  .enName{
+    font-size:16px;
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .arName{
+    margin-top:3px;
+    direction:rtl;
+    unicode-bidi:isolate;
+    font-size:16px;
+    color:rgba(241,211,138,.95);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+</style>
+</head>
+
+<body>
+<section class="screen">
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <div class="title">Surah Walk</div>
+        <div class="subtitle">Choose a surah, then tap through word by word</div>
+      </div>
+      <button class="btnLink" id="btnAttribution">Attribution</button>
+    </div>
+
+    <input id="search" class="search" placeholder="Search… (e.g., Merciful, Cave, Opening, 55)" />
+
+    <div class="list" id="list"></div>
+  </div>
+</section>
+
+<script>
+  // Sample list only; in the real app you’ll load all 114.
+  // Fields: id, en (translated name), ar (Arabic name)
+  const SURAHS = [
+    { id: 1,   en: "The Opening",         ar: "ٱلْفَاتِحَة" },
+    { id: 2,   en: "The Cow",             ar: "ٱلْبَقَرَة" },
+    { id: 9,   en: "Repentance",          ar: "ٱلتَّوْبَة" },
+    { id: 18,  en: "The Cave",            ar: "ٱلْكَهْف" },
+    { id: 36,  en: "Ya-Sin",              ar: "يس" },
+    { id: 55,  en: "The Most Merciful",   ar: "ٱلرَّحْمَٰن" },
+    { id: 67,  en: "The Dominion",        ar: "ٱلْمُلْك" },
+    { id: 112, en: "Sincerity",           ar: "ٱلْإِخْلَاص" }
+  ];
+
+  const listEl = document.getElementById("list");
+  const searchEl = document.getElementById("search");
+
+  function renderList(filter=""){
+    const f = filter.trim().toLowerCase();
+    listEl.innerHTML = "";
+
+    const rows = SURAHS.filter(s => {
+      if(!f) return true;
+      return (
+        String(s.id).includes(f) ||
+        s.en.toLowerCase().includes(f) ||
+        s.ar.includes(filter)
+      );
+    });
+
+    rows.forEach(s => {
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `
+        <div class="num">${s.id}</div>
+        <div class="names">
+          <div class="enName">${s.en}</div>
+          <div class="arName">${s.ar}</div>
+        </div>
+      `;
+      row.addEventListener("click", () => {
+        alert(`Open Reader for surah ${s.id} — ${s.en}`);
+      });
+      listEl.appendChild(row);
+    });
+  }
+
+  searchEl.addEventListener("input", () => renderList(searchEl.value));
+  renderList();
+
+  document.getElementById("btnAttribution").addEventListener("click", () => {
+    alert("Attribution screen (later): Tanzil Arabic text (CC BY 3.0) + CC-licensed Bismillah artwork, etc.");
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Surah Walk</title>
+<style>
+  :root{
+    --bg:#053b2f;
+    --bg2:#042f26;
+    --gold:#f1d38a;
+    --muted:#cfe7de;
+    --muted2:#9fc7bb;
+    --glass:rgba(255,255,255,0.08);
+    --shadow:rgba(0,0,0,0.28);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%; margin:0;}
+  body{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background:
+      radial-gradient(1000px 700px at 30% 15%, rgba(20,140,105,.35), transparent 60%),
+      linear-gradient(180deg, var(--bg), var(--bg2));
+    color:var(--muted);
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior:none;
+  }
+
+  /* Screens */
+  .screen{ display:none; height:100%; }
+  .screen.active{ display:flex; }
+
+  /* ========== PICKER ========== */
+  .picker{
+    flex-direction:column;
+    padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+    gap: 12px;
+  }
+  .header{
+    padding-top:10px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .title{
+    font-size:34px;
+    letter-spacing:.2px;
+    color:var(--gold);
+    text-shadow:0 1px 0 rgba(0,0,0,.35);
+  }
+  .subtitle{
+    margin-top:2px;
+    font-size:13px;
+    color:rgba(159,199,187,.95);
+  }
+  .btnLink{
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    color:var(--muted);
+    padding:10px 12px;
+    border-radius:14px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .btnLink:hover{ background:rgba(255,255,255,.10); }
+
+  .search{
+    width:100%;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    padding:12px;
+    color:var(--muted);
+    outline:none;
+    font-size:14px;
+  }
+  .search::placeholder{ color:rgba(159,199,187,.8); }
+
+  .list{
+    flex:1;
+    overflow:auto;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.05);
+    box-shadow:0 18px 40px var(--shadow);
+  }
+
+  .row{
+    display:flex;
+    gap:12px;
+    padding:14px;
+    border-bottom:1px solid rgba(255,255,255,.07);
+    cursor:pointer;
+    align-items:flex-start;
+  }
+  .row:hover{ background:rgba(255,255,255,.06); }
+
+  .num{
+    width:34px;
+    text-align:right;
+    font-variant-numeric: tabular-nums;
+    color:rgba(159,199,187,.95);
+    padding-top:2px;
+    flex:0 0 auto;
+  }
+
+  .names{
+    min-width:0;
+    flex:1 1 auto;
+  }
+  .enName{
+    font-size:16px;
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .arName{
+    margin-top:3px;
+    direction:rtl;
+    unicode-bidi:isolate;
+    font-size:16px;
+    color:rgba(241,211,138,.95);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  /* ========== ATTRIBUTION MODAL (simple) ========== */
+  .modalBack{
+    position:fixed; inset:0;
+    background: rgba(0,0,0,.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding: 18px;
+  }
+  .modalBack.show{ display:flex; }
+  .modal{
+    width:min(560px,100%);
+    border-radius: 18px;
+    background: rgba(5, 59, 47, 0.96);
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 18px 40px rgba(0,0,0,.35);
+    padding: 16px;
+  }
+  .modal h3{
+    margin:0 0 8px 0;
+    color: var(--gold);
+    font-size: 18px;
+  }
+  .modal p{
+    margin: 0 0 10px 0;
+    color: rgba(207,231,222,.95);
+    line-height: 1.45;
+    font-size: 14px;
+  }
+  .modal .closeRow{ display:flex; justify-content:flex-end; }
+  .modal .closeBtn{
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.06);
+    color: var(--muted);
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    cursor:pointer;
+  }
+
+  /* ========== READER ========== */
+  .reader{
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+  .tap{ position:fixed; inset:0; }
+
+  .backBtn{
+    position: fixed;
+    top: env(safe-area-inset-top);
+    left: env(safe-area-inset-left);
+    margin: 10px 10px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.06);
+    color: var(--muted);
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    cursor:pointer;
+    z-index: 2;
+  }
+
+  .corner{
+    position: fixed;
+    top: env(safe-area-inset-top);
+    right: env(safe-area-inset-right);
+    padding: 12px 14px;
+    font-size: 13px;
+    color: rgba(159,199,187,0.95);
+    letter-spacing: 0.2px;
+    user-select:none;
+    opacity: 0;
+    transition: opacity 140ms ease-out;
+    pointer-events:none;
+    z-index: 2;
+  }
+  .corner.show{ opacity: 1; }
+
+  .card{
+    width:min(560px, 100%);
+    border-radius:28px;
+    background:var(--glass);
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 20px 40px var(--shadow);
+    padding:26px 20px 22px;
+    text-align:center;
+    margin: 0 16px;
+  }
+
+  /* Artwork mode */
+  .artWrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 10px 6px 6px;
+    min-height: 180px;
+  }
+  .art{
+    max-width: 100%;
+    height: auto;
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,0.25));
+  }
+  .artHint{
+    margin-top: 10px;
+    font-size: 12px;
+    color: rgba(159,199,187,.9);
+    line-height: 1.35;
+  }
+
+  /* Word mode */
+  .word{
+    direction:rtl;
+    unicode-bidi:isolate;
+    font-size:clamp(46px, 9vw, 72px);
+    line-height:1.15;
+    color:var(--gold);
+    margin-bottom:12px;
+    text-shadow:0 1px 0 rgba(0,0,0,.35);
+  }
+  .sub{
+    min-height:44px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    font-size:15px;
+  }
+  .pron{ color:var(--muted); }
+  .en{ color:var(--muted2); }
+  .hint{ margin-top:14px; font-size:12px; color:rgba(159,199,187,.9); }
+
+  .fade{ animation:fadeIn .18s ease-out; }
+  @keyframes fadeIn{
+    from{opacity:.6; transform:translateY(2px);}
+    to{opacity:1; transform:none;}
+  }
+</style>
+</head>
+
+<body>
+
+<!-- PICKER -->
+<section id="screenPicker" class="screen picker active">
+  <div class="header">
+    <div>
+      <div class="title">Surah Walk</div>
+      <div class="subtitle">Choose a surah, then tap through word by word</div>
+    </div>
+    <button class="btnLink" id="btnAttribution">Attribution</button>
+  </div>
+
+  <input id="search" class="search" placeholder="Search… (e.g., Merciful, Cave, Opening, 55)" />
+
+  <div class="list" id="list"></div>
+</section>
+
+<!-- READER -->
+<section id="screenReader" class="screen reader">
+  <button class="backBtn" id="btnBack">Back</button>
+  <div class="corner" id="cornerRef">—</div>
+
+  <div class="card fade" id="card">
+    <div id="artMode">
+      <div class="artWrap">
+        <img
+          class="art"
+          alt="Bismillah calligraphy"
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Bismillah_Calligraphy23.svg/1024px-Bismillah_Calligraphy23.svg.png"
+        />
+      </div>
+      <div class="artHint">Tap to begin.</div>
+    </div>
+
+    <div id="wordMode" style="display:none;">
+      <div class="word" id="ar">—</div>
+      <div class="sub">
+        <div class="pron" id="pron"></div>
+        <div class="en" id="en"></div>
+      </div>
+      <div class="hint">tap anywhere</div>
+    </div>
+  </div>
+
+  <div class="tap" id="tap" aria-label="tap anywhere"></div>
+</section>
+
+<!-- Attribution modal -->
+<div class="modalBack" id="modalBack">
+  <div class="modal">
+    <h3>Attribution</h3>
+    <p>
+      Demo note: the “reading” words here are placeholders.<br><br>
+      Planned Arabic Qur’an text source: Tanzil (CC BY 3.0).<br>
+      Bismillah calligraphy image: Wikimedia Commons (CC0).
+    </p>
+    <div class="closeRow">
+      <button class="closeBtn" id="btnCloseModal">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =======================
+   SURAH METADATA (sample)
+   ======================= */
+const SURAHS = [
+  { id: 1,   en: "The Opening",         ar: "ٱلْفَاتِحَة" },
+  { id: 2,   en: "The Cow",             ar: "ٱلْبَقَرَة" },
+  { id: 9,   en: "Repentance",          ar: "ٱلتَّوْبَة" },
+  { id: 18,  en: "The Cave",            ar: "ٱلْكَهْف" },
+  { id: 36,  en: "Ya-Sin",              ar: "يس" },
+  { id: 55,  en: "The Most Merciful",   ar: "ٱلرَّحْمَٰن" },
+  { id: 67,  en: "The Dominion",        ar: "ٱلْمُلْك" },
+  { id: 112, en: "Sincerity",           ar: "ٱلْإِخْلَاص" }
+];
+
+/* =======================
+   PICKER UI
+   ======================= */
+const listEl = document.getElementById("list");
+const searchEl = document.getElementById("search");
+
+function renderList(filter=""){
+  const f = filter.trim().toLowerCase();
+  listEl.innerHTML = "";
+
+  const rows = SURAHS.filter(s => {
+    if(!f) return true;
+    return (
+      String(s.id).includes(f) ||
+      s.en.toLowerCase().includes(f) ||
+      s.ar.includes(filter)
+    );
+  });
+
+  rows.forEach(s => {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <div class="num">${s.id}</div>
+      <div class="names">
+        <div class="enName">${s.en}</div>
+        <div class="arName">${s.ar}</div>
+      </div>
+    `;
+    row.addEventListener("click", () => openReader(s.id));
+    listEl.appendChild(row);
+  });
+}
+searchEl.addEventListener("input", () => renderList(searchEl.value));
+renderList();
+
+/* Attribution modal */
+const modalBack = document.getElementById("modalBack");
+document.getElementById("btnAttribution").addEventListener("click", () => modalBack.classList.add("show"));
+document.getElementById("btnCloseModal").addEventListener("click", () => modalBack.classList.remove("show"));
+modalBack.addEventListener("click", (e) => { if(e.target === modalBack) modalBack.classList.remove("show"); });
+
+/* =======================
+   NAVIGATION
+   ======================= */
+const screenPicker = document.getElementById("screenPicker");
+const screenReader = document.getElementById("screenReader");
+document.getElementById("btnBack").addEventListener("click", () => {
+  stopReader();
+  screenReader.classList.remove("active");
+  screenPicker.classList.add("active");
+});
+
+/* =======================
+   READER LOGIC (placeholder content)
+   Replace later with real surah data.
+   ======================= */
+let SURAH_ID = 1;
+
+// Modes: ART (Bismillah image) or READING
+let mode = "ART";
+let ayahIndex = 0;
+let wordIndex = 0;
+
+const AYAHS_PLACEHOLDER = [
+  { ayah: 1, words: [
+    { ar:"إِنَّ", pron:"inna", en:"indeed" },
+    { ar:"هَٰذَا", pron:"hādhā", en:"this" },
+    { ar:"أَمْرٌ", pron:"amr(un)", en:"matter" },
+    { ar:"بَيِّنٌ", pron:"bayyin(un)", en:"clear" }
+  ]},
+  { ayah: 2, words: [
+    { ar:"وَ", pron:"wa", en:"and" },
+    { ar:"هُوَ", pron:"huwa", en:"He / It is" },
+    { ar:"قَرِيبٌ", pron:"qarīb(un)", en:"near" }
+  ]}
+];
+
+// Active reference to current surah's ayahs (placeholder for now)
+let AYAHS = AYAHS_PLACEHOLDER;
+
+const elCorner = document.getElementById("cornerRef");
+const elAr = document.getElementById("ar");
+const elPron = document.getElementById("pron");
+const elEn = document.getElementById("en");
+const elCard = document.getElementById("card");
+const tap = document.getElementById("tap");
+const artMode = document.getElementById("artMode");
+const wordMode = document.getElementById("wordMode");
+
+function animate(){
+  elCard.classList.remove("fade");
+  void elCard.offsetWidth;
+  elCard.classList.add("fade");
+}
+
+function renderReader(){
+  if (mode === "ART") {
+    artMode.style.display = "";
+    wordMode.style.display = "none";
+    elCorner.classList.remove("show");
+    return;
+  }
+
+  artMode.style.display = "none";
+  wordMode.style.display = "";
+  elCorner.classList.add("show");
+
+  const a = AYAHS[ayahIndex];
+  elCorner.textContent = `${SURAH_ID}:${a.ayah}`;
+
+  const w = a.words[wordIndex];
+  elAr.textContent = w.ar;
+  elPron.textContent = w.pron || "";
+  elEn.textContent = w.en || "";
+  animate();
+}
+
+function next(){
+  // If in ART mode: start reading.
+  if (mode === "ART") {
+    mode = "READING";
+    ayahIndex = 0;
+    wordIndex = 0; // show first word immediately
+    renderReader();
+    return;
+  }
+
+  const a = AYAHS[ayahIndex];
+
+  // advance within ayah
+  if (wordIndex < a.words.length - 1) {
+    wordIndex++;
+    renderReader();
+    return;
+  }
+
+  // advance to next ayah
+  if (ayahIndex < AYAHS.length - 1) {
+    ayahIndex++;
+    wordIndex = 0; // show first word immediately (no dash screens)
+    renderReader();
+    return;
+  }
+
+  // end: restart for demo
+  mode = (SURAH_ID === 9) ? "READING" : "ART";
+  ayahIndex = 0;
+  wordIndex = 0;
+  renderReader();
+}
+
+function openReader(surahId){
+  SURAH_ID = surahId;
+
+  // In the real app, you'd set AYAHS = loadSurahAyahs(SURAH_ID)
+  AYAHS = AYAHS_PLACEHOLDER;
+
+  mode = (SURAH_ID === 9) ? "READING" : "ART";
+  ayahIndex = 0;
+  wordIndex = 0;
+
+  screenPicker.classList.remove("active");
+  screenReader.classList.add("active");
+  renderReader();
+
+  tap.addEventListener("click", next);
+}
+
+function stopReader(){
+  tap.removeEventListener("click", next);
+}
+</script>
+</body>
+</html>
