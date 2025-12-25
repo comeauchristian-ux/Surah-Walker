@@ -12,26 +12,29 @@
       --muted2:#94a3b8;
     }
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
-    body{ background:
-    linear-gradient(
-      rgba(6, 78, 59, 0.85),
-      rgba(6, 78, 59, 0.85)
-    ),
-    url("scenic-pixel-hike.png");
-	background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-	color:white;display:flex;align-items:center;justify-content:center;}
+    body{
+      --bg-img-walk: url("scenic-pixel-hike.png");
+      --bg-img-pause: var(--bg-img-walk);
+      background: var(--bg-img-walk);
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      color:white;display:flex;align-items:center;justify-content:center;
+    }
 
-	
+    /* Time-of-day hooks (only swap images; no overlays) */
+    body.tod-dawn{}
+    body.tod-day{}
+    body.tod-dusk{}
+    body.tod-night{}
+
 	body.resting {
-  background:
-    linear-gradient(
-      rgba(6, 78, 59, 0.75),
-      rgba(6, 78, 59, 0.75)
-    ),
-    url("scenic-pixel-hike.png");
+      background: var(--bg-img-pause);
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
 }
 
     .wrap{width:min(1100px, 92vw);height:100vh;position:relative;display:flex;align-items:center;justify-content:center;}
@@ -252,6 +255,46 @@ let voiceAr = null;
 let inVersePause = false;
 let verseTextByKey = {};
 let verseEngByKey = {};
+const timeOfDayClasses = ["tod-dawn","tod-day","tod-dusk","tod-night"];
+const bgSettings = ["beach","countryside","forest","garden","lakeside","mountain"];
+const BG_BASE_PATH = "../assets/bg";
+let chosenSetting = null;
+let chosenTimeOfDay = null;
+
+function pickTimeOfDaySlot() {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 10) return "dawn";
+  if (hour >= 10 && hour < 16) return "day";
+  if (hour >= 16 && hour < 22) return "dusk";
+  return "night";
+}
+
+function chooseAndApplyBackgrounds() {
+  const body = document.body;
+  const tod = pickTimeOfDaySlot();
+  chosenTimeOfDay = tod;
+  chosenSetting = (tod === "night") ? null : bgSettings[cryptoRandomInt(0, bgSettings.length - 1)];
+
+  timeOfDayClasses.forEach(c => body.classList.remove(c));
+  body.classList.add(`tod-${tod}`);
+
+  const makePath = (filename) => `${BG_BASE_PATH}/${filename}`;
+  let walkPath = "scenic-pixel-hike.png";
+  let pausePath = walkPath;
+  if (tod === "night") {
+    walkPath = makePath("night_pause.png");
+    pausePath = makePath("night_resting.png");
+  } else {
+    const setting = chosenSetting || bgSettings[0];
+    walkPath = makePath(`${setting}_${tod}_walk.png`);
+    pausePath = makePath(`${setting}_${tod}_pause.png`);
+  }
+
+  body.style.setProperty("--bg-img-walk", `url("${walkPath}")`);
+  body.style.setProperty("--bg-img-pause", `url("${pausePath}")`);
+}
+
+chooseAndApplyBackgrounds();
 
 function pickArabicVoice() {
   const voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
@@ -304,7 +347,6 @@ function speakArabic(text) {
   tglAudio.style.background = audioOn ? "rgba(212,175,55,.20)" : "rgba(0,0,0,.12)";
   tglAudio.style.borderColor = audioOn ? "rgba(212,175,55,.55)" : "rgba(255,255,255,.18)";
 }
-tglAudio.addEventListener("click", toggleAudio);
 
   function cryptoRandomInt(minInclusive, maxInclusive){
     const span = maxInclusive - minInclusive + 1;
