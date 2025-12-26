@@ -181,12 +181,18 @@
       width:min(1200px, 96vw);
       max-width:100%;
     }
+    .bookStage{
+      width:min(1200px, 96vw);
+    }
     .libraryBg{
       width:100%;
       height:auto;
       display:block;
       border-radius:18px;
       box-shadow:0 12px 36px rgba(0,0,0,0.28);
+    }
+    .bookBg{
+      box-shadow:0 10px 28px rgba(0,0,0,0.25);
     }
     .hotspot{
       position:absolute;
@@ -269,6 +275,18 @@
         />
       </div>
     </div>
+    
+    <div class="screen" id="bookIndex">
+      <div class="libraryStage bookStage" id="bookStage">
+        <img
+          class="libraryBg bookBg"
+          id="bookImage"
+          src=""
+          alt="Book"
+        />
+      </div>
+      <div class="pill" id="bookBack" style="margin-top:16px;">Back to Library</div>
+    </div>
   
     <div class="screen" id="splash">
       <div class="card">
@@ -346,8 +364,11 @@
   const hintEl = el("hint");
   const libraryStage = el("libraryStage");
   const libraryScreen = el("library");
+  const bookStage = el("bookStage");
+  const bookImage = el("bookImage");
+  const bookBack = el("bookBack");
 
-  const screens = ["library", "splash", "reader"];
+  const screens = ["library", "bookIndex", "splash", "reader"];
   const STORAGE_KEYS = {
     lastSurah: "surahWalker:lastSurah",
     lastWordIndex: "surahWalker:lastWordIndex",
@@ -367,6 +388,7 @@ const baseDir = pathName.endsWith("/")
   ? pathName
   : pathName.replace(/[^/]+$/, "");
 const BG_BASE_PATH = `${baseDir.replace(/\/+$/, "/")}assets/bg`;
+const UI_BASE_PATH = `${baseDir.replace(/\/+$/, "/")}assets/ui`;
 let chosenSetting = null;
 let chosenTimeOfDay = null;
 
@@ -417,14 +439,16 @@ chooseAndApplyBackgrounds();
 
 const hotspotDefs = [
   { id: "random", action: "random", left: 11, top: 10, width: 9, height: 46, label: "Random" },
-  { id: "range-1", action: "range", left: 20, top: 14, width: 5.5, height: 40, label: "1", min: 1, max: 9 },
-  { id: "range-10", action: "range", left: 25.5, top: 14, width: 6, height: 40, label: "10", min: 10, max: 19 },
-  { id: "range-20", action: "range", left: 31.5, top: 14, width: 6, height: 40, label: "20", min: 20, max: 29 },
-  { id: "range-30", action: "range", left: 38, top: 14, width: 6, height: 40, label: "30", min: 30, max: 39 },
-  { id: "range-40", action: "range", left: 44.5, top: 14, width: 5.5, height: 40, label: "40", min: 40, max: 49 },
-  { id: "range-50", action: "range", left: 50.5, top: 14, width: 5.5, height: 40, label: "50", min: 50, max: 59 },
-  { id: "range-60", action: "range", left: 56, top: 14, width: 7, height: 40, label: "60", min: 60, max: 69 },
-  { id: "range-70", action: "range", left: 63, top: 14, width: 8, height: 40, label: "70", min: 70, max: 79 },
+  { id: "range-1", action: "book", left: 20, top: 14, width: 5.5, height: 40, label: "1", book: "book1" },
+  { id: "range-10", action: "book", left: 25.5, top: 14, width: 6, height: 40, label: "10", book: "book10" },
+  { id: "range-20", action: "book", left: 31.5, top: 14, width: 6, height: 40, label: "20", book: "book20" },
+  { id: "range-30", action: "book", left: 38, top: 14, width: 6, height: 40, label: "30", book: "book30" },
+  { id: "range-40", action: "book", left: 44.5, top: 14, width: 5.5, height: 40, label: "40", book: "book40" },
+  { id: "range-50", action: "book", left: 50.5, top: 14, width: 5.5, height: 40, label: "50", book: "book50" },
+  { id: "range-60", action: "book", left: 56, top: 14, width: 7, height: 40, label: "60", book: "book60" },
+  { id: "range-70", action: "book", left: 63, top: 14, width: 8, height: 40, label: "70", book: "book70" },
+  { id: "range-80", action: "book", left: 71, top: 14, width: 8, height: 40, label: "80", book: "book70" },
+  { id: "range-90", action: "book", left: 79, top: 14, width: 8, height: 40, label: "90+", book: "book70" },
   { id: "favorites", action: "favorites", left: 71, top: 13, width: 9, height: 42, label: "Favorites" },
   { id: "continue", action: "continue", left: 13, top: 70, width: 38, height: 20, label: "Continue" },
   { id: "journal", action: "journal", left: 46, top: 55, width: 26, height: 15, label: "Journal" },
@@ -441,6 +465,7 @@ function buildLibraryHotspots(){
     btn.dataset.id = h.id;
     if(h.min !== undefined) btn.dataset.min = String(h.min);
     if(h.max !== undefined) btn.dataset.max = String(h.max);
+    if(h.book) btn.dataset.book = h.book;
     btn.style.left = `${h.left}%`;
     btn.style.top = `${h.top}%`;
     btn.style.width = `${h.width}%`;
@@ -455,15 +480,205 @@ function buildLibraryHotspots(){
 
 buildLibraryHotspots();
 
+const bookConfigs = {
+  book1: {
+    label: "1–9",
+    image: `${UI_BASE_PATH}/book1.png`,
+    entries: [
+      { label: "1", type: "surah", chapter: 1 },
+      { label: "2", type: "surah", chapter: 2 },
+      { label: "3", type: "surah", chapter: 3 },
+      { label: "4", type: "surah", chapter: 4 },
+      { label: "5", type: "surah", chapter: 5 },
+      { label: "6", type: "surah", chapter: 6 },
+      { label: "7", type: "surah", chapter: 7 },
+      { label: "8", type: "surah", chapter: 8 },
+      { label: "9", type: "surah", chapter: 9 },
+      { label: "Random 1–9", type: "random", min: 1, max: 9 }
+    ]
+  },
+  book10: {
+    label: "10–19",
+    image: `${UI_BASE_PATH}/book10.png`,
+    entries: [
+      { label: "10", type: "surah", chapter: 10 },
+      { label: "11", type: "surah", chapter: 11 },
+      { label: "12", type: "surah", chapter: 12 },
+      { label: "13", type: "surah", chapter: 13 },
+      { label: "14", type: "surah", chapter: 14 },
+      { label: "15", type: "surah", chapter: 15 },
+      { label: "16", type: "surah", chapter: 16 },
+      { label: "17", type: "surah", chapter: 17 },
+      { label: "18", type: "surah", chapter: 18 },
+      { label: "19", type: "surah", chapter: 19 },
+      { label: "Random 10–19", type: "random", min: 10, max: 19 }
+    ]
+  },
+  book20: {
+    label: "20–29",
+    image: `${UI_BASE_PATH}/book20.png`,
+    entries: [
+      { label: "20", type: "surah", chapter: 20 },
+      { label: "21", type: "surah", chapter: 21 },
+      { label: "22", type: "surah", chapter: 22 },
+      { label: "23", type: "surah", chapter: 23 },
+      { label: "24", type: "surah", chapter: 24 },
+      { label: "25", type: "surah", chapter: 25 },
+      { label: "26", type: "surah", chapter: 26 },
+      { label: "27", type: "surah", chapter: 27 },
+      { label: "28", type: "surah", chapter: 28 },
+      { label: "29", type: "surah", chapter: 29 },
+      { label: "Random 20–29", type: "random", min: 20, max: 29 }
+    ]
+  },
+  book30: {
+    label: "30–39",
+    image: `${UI_BASE_PATH}/book30.png`,
+    entries: [
+      { label: "30", type: "surah", chapter: 30 },
+      { label: "31", type: "surah", chapter: 31 },
+      { label: "32", type: "surah", chapter: 32 },
+      { label: "33", type: "surah", chapter: 33 },
+      { label: "34", type: "surah", chapter: 34 },
+      { label: "35", type: "surah", chapter: 35 },
+      { label: "36", type: "surah", chapter: 36 },
+      { label: "37", type: "surah", chapter: 37 },
+      { label: "38", type: "surah", chapter: 38 },
+      { label: "39", type: "surah", chapter: 39 },
+      { label: "Random 30–39", type: "random", min: 30, max: 39 }
+    ]
+  },
+  book40: {
+    label: "40–49",
+    image: `${UI_BASE_PATH}/book40.png`,
+    entries: [
+      { label: "40", type: "surah", chapter: 40 },
+      { label: "41", type: "surah", chapter: 41 },
+      { label: "42", type: "surah", chapter: 42 },
+      { label: "43", type: "surah", chapter: 43 },
+      { label: "44", type: "surah", chapter: 44 },
+      { label: "45", type: "surah", chapter: 45 },
+      { label: "46", type: "surah", chapter: 46 },
+      { label: "47", type: "surah", chapter: 47 },
+      { label: "48", type: "surah", chapter: 48 },
+      { label: "49", type: "surah", chapter: 49 },
+      { label: "Random 40–49", type: "random", min: 40, max: 49 }
+    ]
+  },
+  book50: {
+    label: "50–59",
+    image: `${UI_BASE_PATH}/book50.png`,
+    entries: [
+      { label: "50", type: "surah", chapter: 50 },
+      { label: "51", type: "surah", chapter: 51 },
+      { label: "52", type: "surah", chapter: 52 },
+      { label: "53", type: "surah", chapter: 53 },
+      { label: "54", type: "surah", chapter: 54 },
+      { label: "55", type: "surah", chapter: 55 },
+      { label: "56", type: "surah", chapter: 56 },
+      { label: "57", type: "surah", chapter: 57 },
+      { label: "58", type: "surah", chapter: 58 },
+      { label: "59", type: "surah", chapter: 59 },
+      { label: "Random 50–59", type: "random", min: 50, max: 59 }
+    ]
+  },
+  book60: {
+    label: "60–69",
+    image: `${UI_BASE_PATH}/book60.png`,
+    entries: [
+      { label: "60", type: "surah", chapter: 60 },
+      { label: "61", type: "surah", chapter: 61 },
+      { label: "62", type: "surah", chapter: 62 },
+      { label: "63", type: "surah", chapter: 63 },
+      { label: "64", type: "surah", chapter: 64 },
+      { label: "65", type: "surah", chapter: 65 },
+      { label: "66", type: "surah", chapter: 66 },
+      { label: "67", type: "surah", chapter: 67 },
+      { label: "68", type: "surah", chapter: 68 },
+      { label: "69", type: "surah", chapter: 69 },
+      { label: "Random 60–69", type: "random", min: 60, max: 69 }
+    ]
+  },
+  book70: {
+    label: "70–114",
+    image: `${UI_BASE_PATH}/book70.png`,
+    entries: [
+      { label: "Random 70–79", type: "random", min: 70, max: 79 },
+      { label: "Random 80–89", type: "random", min: 80, max: 89 },
+      { label: "Random 90–99", type: "random", min: 90, max: 99 },
+      { label: "Random 100–114", type: "random", min: 100, max: 114 },
+      { label: "Random 70–114", type: "random", min: 70, max: 114 }
+    ]
+  }
+};
+
+function computeGridLayout(count, cols = 3){
+  const gap = 2.5;
+  const rows = Math.ceil(count / cols) || 1;
+  const width = (100 - (cols + 1) * gap) / cols;
+  const height = (100 - (rows + 1) * gap) / rows;
+  const spots = [];
+  for(let i=0;i<count;i++){
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const left = gap + col * (width + gap);
+    const top = gap + row * (height + gap);
+    spots.push({ left, top, width, height });
+  }
+  return spots;
+}
+
+function openBookPage(bookId){
+  const cfg = bookConfigs[bookId];
+  if(!cfg){
+    // Fallback to random if unknown
+    startRandom();
+    return;
+  }
+  if(!bookStage || !bookImage) return;
+  bookImage.src = cfg.image;
+  bookImage.alt = `Book ${cfg.label || bookId}`;
+
+  // Clear old hotspots
+  const old = bookStage.querySelectorAll(".hotspot");
+  old.forEach(n => n.remove());
+
+  const layout = computeGridLayout(cfg.entries.length, 3);
+  cfg.entries.forEach((entry, idx) => {
+    const pos = layout[idx] || { left: 5, top: 5 + idx * 12, width: 90, height: 10 };
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "hotspot";
+    btn.dataset.action = entry.type;
+    if(entry.chapter) btn.dataset.chapter = String(entry.chapter);
+    if(entry.min !== undefined) btn.dataset.min = String(entry.min);
+    if(entry.max !== undefined) btn.dataset.max = String(entry.max);
+    btn.style.left = `${pos.left}%`;
+    btn.style.top = `${pos.top}%`;
+    btn.style.width = `${pos.width}%`;
+    btn.style.height = `${pos.height}%`;
+    const label = document.createElement("span");
+    label.className = "hotspotLabel";
+    label.textContent = entry.label || entry.chapter || entry.type;
+    btn.appendChild(label);
+    bookStage.appendChild(btn);
+  });
+
+  showScreen("bookIndex");
+}
+
 function handleLibraryClick(ev){
   const target = ev.target.closest(".hotspot");
   if(!target) return;
   ev.preventDefault();
   ev.stopPropagation();
-  const action = target.dataset.action;
-  switch(action){
+    const action = target.dataset.action;
+    switch(action){
     case "random":
       startRandom();
+      break;
+    case "book":
+      openBookPage(target.dataset.book);
       break;
     case "continue":
       startContinue();
@@ -490,6 +705,39 @@ function handleLibraryClick(ev){
 
 if(libraryStage){
   libraryStage.addEventListener("pointerdown", handleLibraryClick);
+}
+
+function handleBookClick(ev){
+  const target = ev.target.closest(".hotspot");
+  if(!target) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  const action = target.dataset.action;
+  switch(action){
+    case "surah": {
+      const ch = Number(target.dataset.chapter);
+      if(Number.isFinite(ch)) loadAndStartSurah(ch, 0);
+      break;
+    }
+    case "random": {
+      const min = Number(target.dataset.min);
+      const max = Number(target.dataset.max);
+      startRange(min, max);
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+if(bookStage){
+  bookStage.addEventListener("pointerdown", handleBookClick);
+}
+if(bookBack){
+  bookBack.addEventListener("pointerdown", (ev) => {
+    ev.stopPropagation();
+    showScreen("library");
+  });
 }
 
 function pickArabicVoice() {
