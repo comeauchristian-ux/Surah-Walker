@@ -416,21 +416,19 @@ loadStoredPreferences();
 chooseAndApplyBackgrounds();
 
 const hotspotDefs = [
-  { id: "random", action: "random", left: 4, top: 10, width: 13, height: 46, label: "Random" },
-  { id: "range-1", action: "range", left: 20, top: 14, width: 4.5, height: 40, label: "1", min: 1, max: 9 },
-  { id: "range-10", action: "range", left: 25.5, top: 14, width: 4.5, height: 40, label: "10", min: 10, max: 19 },
-  { id: "range-20", action: "range", left: 31, top: 14, width: 4.5, height: 40, label: "20", min: 20, max: 29 },
-  { id: "range-30", action: "range", left: 36.5, top: 14, width: 4.5, height: 40, label: "30", min: 30, max: 39 },
-  { id: "range-40", action: "range", left: 43, top: 14, width: 4.5, height: 40, label: "40", min: 40, max: 49 },
-  { id: "range-50", action: "range", left: 48.5, top: 14, width: 4.5, height: 40, label: "50", min: 50, max: 59 },
-  { id: "range-60", action: "range", left: 54, top: 14, width: 4.5, height: 40, label: "60", min: 60, max: 69 },
-  { id: "range-70", action: "range", left: 59.5, top: 14, width: 4.5, height: 40, label: "70", min: 70, max: 79 },
-  { id: "range-80", action: "range", left: 66, top: 14, width: 4.5, height: 40, label: "80", min: 80, max: 89 },
-  { id: "range-90", action: "range", left: 71.5, top: 14, width: 4.5, height: 40, label: "90+", min: 90, max: 114 },
-  { id: "favorites", action: "favorites", left: 78, top: 13, width: 9, height: 42, label: "Favorites" },
-  { id: "continue", action: "continue", left: 9, top: 70, width: 28, height: 20, label: "Continue" },
-  { id: "journal", action: "journal", left: 44, top: 63, width: 20, height: 16, label: "Journal" },
-  { id: "settings", action: "settings", left: 69, top: 60, width: 17, height: 30, label: "Settings" }
+  { id: "random", action: "random", left: 11, top: 10, width: 9, height: 46, label: "Random" },
+  { id: "range-1", action: "range", left: 20, top: 14, width: 5.5, height: 40, label: "1", min: 1, max: 9 },
+  { id: "range-10", action: "range", left: 25.5, top: 14, width: 6, height: 40, label: "10", min: 10, max: 19 },
+  { id: "range-20", action: "range", left: 31.5, top: 14, width: 6, height: 40, label: "20", min: 20, max: 29 },
+  { id: "range-30", action: "range", left: 38, top: 14, width: 6, height: 40, label: "30", min: 30, max: 39 },
+  { id: "range-40", action: "range", left: 44.5, top: 14, width: 5.5, height: 40, label: "40", min: 40, max: 49 },
+  { id: "range-50", action: "range", left: 50.5, top: 14, width: 5.5, height: 40, label: "50", min: 50, max: 59 },
+  { id: "range-60", action: "range", left: 56, top: 14, width: 7, height: 40, label: "60", min: 60, max: 69 },
+  { id: "range-70", action: "range", left: 63, top: 14, width: 8, height: 40, label: "70", min: 70, max: 79 },
+  { id: "favorites", action: "favorites", left: 71, top: 13, width: 9, height: 42, label: "Favorites" },
+  { id: "continue", action: "continue", left: 13, top: 70, width: 38, height: 20, label: "Continue" },
+  { id: "journal", action: "journal", left: 46, top: 55, width: 26, height: 15, label: "Journal" },
+  { id: "settings", action: "settings", left: 73, top: 55, width: 26, height: 30, label: "Settings" }
 ];
 
 function buildLibraryHotspots(){
