@@ -65,10 +65,11 @@
     }
     .corner{
       position:absolute;
-      top:calc(14px + env(safe-area-inset-top, 0px));
+      top:14px;
       left:14px;
+      padding-top: env(safe-area-inset-top);
       font-size:14px;
-      color:var(--muted);
+      color:#e2e8f0;
       letter-spacing:.2px;
       user-select:none;
       z-index:12000; /* keep progress visible above overlays */
