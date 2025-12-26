@@ -64,10 +64,15 @@
       z-index:1; /* keep content above blurred background layer */
     }
     .corner{
-      position:absolute;top:14px;left:14px;
-      font-size:14px;color:var(--muted);
+      position:absolute;
+      top:calc(14px + env(safe-area-inset-top, 0px));
+      left:14px;
+      font-size:14px;
+      color:var(--muted);
       letter-spacing:.2px;
       user-select:none;
+      z-index:12000; /* keep progress visible above overlays */
+      text-shadow:0 1px 6px rgba(0,0,0,0.45);
     }
     .corner b{color:white;font-weight:650}
     .center{
