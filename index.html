@@ -34,7 +34,7 @@
       background-position: center center;
       background-repeat: no-repeat;
       background-attachment: fixed;
-      filter: blur(1px);
+      filter: blur(2px);
       transform: scale(1.03);
       z-index:0;
       pointer-events:none;
@@ -272,6 +272,7 @@
   // We'll fetch per_page=50 and paginate until done.
   const API_BASE = "https://api.quran.com/api/v4";
   const TRANSLATION_ID = 20; // prefer a common English translation (fallbacks will still work)
+  const HINT_DELAY_MS = 750;
 
   const el = (id) => document.getElementById(id);
 
@@ -388,6 +389,7 @@ function speakArabic(text) {
   let showPron = true;
   let showMean = true;
   let started = false;
+  let hintTimeoutId = null; // prevents stale hint reveal when tapping quickly
   
   function toggleAudio(ev){
   ev.stopPropagation();
@@ -466,6 +468,10 @@ function getVerseKey(w) {
   }
 
   function render(){
+    if (hintTimeoutId !== null) {
+      clearTimeout(hintTimeoutId); // cancel prior delayed hint update (stale guard)
+      hintTimeoutId = null;
+    }
     const cur = wordsFlat[idx];
     if(!cur){
       wordEl.textContent = "✓";
@@ -500,6 +506,10 @@ function getVerseKey(w) {
     // Hide per-word aids and toggle buttons during the verse pause (including audio)
     pronEl.style.display = "none";
     meanEl.style.display = "none";
+    pronEl.textContent = "";
+    meanEl.textContent = "";
+    pronEl.style.opacity = 0;
+    meanEl.style.opacity = 0;
     tglPron.style.display = "none";
     tglMean.style.display = "none";
     tglAudio.style.display = "none";
@@ -539,16 +549,35 @@ function getVerseKey(w) {
      hintEl.style.display = "";
    }
 
-   // Per-word assistant texts
-   pronEl.style.display = showPron ? "block" : "none";
-   meanEl.style.display = showMean ? "block" : "none";
-   const pronText = showPron ? (cur.translit || "—") : "";
-   const meanText = showMean ? (cur.meaning || getApproxMeaning(cur) || "—") : "";
-   pronEl.textContent = pronText;
-   meanEl.textContent = meanText;
-
-   // Debug state after render in normal mode
-   console.debug('render normal', { idx, showPron, pronText: pronText, showMean, meanText: meanText, fallbackUsed: !!(showMean && !cur.meaning) });
+  // Per-word assistant texts (delayed fade-in to reduce visual competition)
+  pronEl.style.display = showPron ? "block" : "none";
+  meanEl.style.display = showMean ? "block" : "none";
+  pronEl.textContent = "";
+  meanEl.textContent = "";
+  pronEl.style.opacity = 0;
+  meanEl.style.opacity = 0;
+  hintTimeoutId = setTimeout(() => {
+    // Delayed hint reveal; stale timers are cleared at render start
+    if (showPron) {
+      pronEl.style.display = "block";
+      pronEl.textContent = cur.translit || "";
+      requestAnimationFrame(() => { pronEl.style.opacity = 1; });
+    } else {
+      pronEl.style.display = "none";
+      pronEl.textContent = "";
+      pronEl.style.opacity = 0;
+    }
+    if (showMean) {
+      meanEl.style.display = "block";
+      meanEl.textContent = cur.meaning || getApproxMeaning(cur) || "";
+      requestAnimationFrame(() => { meanEl.style.opacity = 1; });
+    } else {
+      meanEl.style.display = "none";
+      meanEl.textContent = "";
+      meanEl.style.opacity = 0;
+    }
+    console.debug('render normal', { idx, showPron, pronText: pronEl.textContent, showMean, meanText: meanEl.textContent, fallbackUsed: !!(showMean && !cur.meaning) });
+  }, HINT_DELAY_MS);
 
    // Restore corner position
    corner.style.left = "14px";
@@ -756,3 +785,5 @@ if (cur) speakArabic(cur.arabic);
 </script>
 </body>
 </html>
+
+
