@@ -78,6 +78,12 @@
       background:rgba(0,0,0,0.32);
       border:1px solid rgba(255,255,255,0.18);
       border-radius:12px;
+      cursor:pointer;
+      transition:background .18s ease, border-color .18s ease;
+    }
+    .corner:hover{
+      background:rgba(0,0,0,0.46);
+      border-color:rgba(255,255,255,0.28);
     }
     .corner b{color:white;font-weight:650}
     .center{
@@ -100,6 +106,66 @@
       backdrop-filter:blur(4px);
       pointer-events:none;
       z-index:0;
+    }
+    #cornerMenu{
+      position:fixed;
+      display:none;
+      top:calc(12px + env(safe-area-inset-top, 0px));
+      left:50%;
+      transform:translateX(-50%);
+      width:260px;
+      background:rgba(0,0,0,0.16);
+      border:1px solid rgba(255,255,255,0.18);
+      border-radius:14px;
+      padding:12px;
+      z-index:13000;
+      backdrop-filter:blur(4px);
+      box-shadow:0 10px 30px rgba(0,0,0,0.35);
+      color:#e2e8f0;
+    }
+    #cornerMenu h4{
+      margin:2px 0 10px 0;
+      font-size:16px;
+      font-weight:700;
+      letter-spacing:.2px;
+      color:#f8fafc;
+      text-align:left;
+    }
+    #cornerMenu .row{
+      display:flex;
+      gap:8px;
+      margin-bottom:10px;
+      align-items:center;
+    }
+    #cornerMenu input[type=number]{
+      flex:1;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(0,0,0,0.12);
+      color:#e2e8f0;
+      font-size:14px;
+      outline:none;
+    }
+    #cornerMenu button{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(0,0,0,0.18);
+      color:#e2e8f0;
+      font-size:14px;
+      cursor:pointer;
+      transition:background .15s ease, border-color .15s ease;
+    }
+    #cornerMenu button:hover{
+      background:rgba(0,0,0,0.28);
+      border-color:rgba(255,255,255,0.28);
+    }
+    #cornerMenu .primary{
+      width:auto;
+      padding:10px 14px;
+      white-space:nowrap;
     }
     .center > *{
       position:relative;
@@ -247,7 +313,17 @@
     </div>
 
     <div class="corner" id="corner" style="display:none">
-      <b id="cornerRef">â€“</b> Â· <span id="cornerProg">â€“</span>
+      <b id="cornerRef">--</b> | <span id="cornerProg">--</span>
+    </div>
+    <div id="cornerMenu" aria-hidden="true">
+      <h4>Surah</h4>
+      <div class="row">
+        <input type="number" id="surahInput" min="1" max="114" placeholder="1-114" />
+        <button class="primary" id="btnLoad">Load</button>
+      </div>
+      <button id="btnRandom">Random</button>
+      <button id="btnReplay" style="margin-top:8px;">Replay current</button>
+      <button id="btnCloseMenu" style="margin-top:8px;">Close</button>
     </div>
 
     <div class="center" id="reader" style="display:none">
@@ -294,6 +370,12 @@
   const corner = el("corner");
   const cornerRef = el("cornerRef");
   const cornerProg = el("cornerProg");
+  const cornerMenu = el("cornerMenu");
+  const surahInput = el("surahInput");
+  const btnLoad = el("btnLoad");
+  const btnRandom = el("btnRandom");
+  const btnReplay = el("btnReplay");
+  const btnCloseMenu = el("btnCloseMenu");
 
   const reader = el("reader");
   const wordEl = el("word");
@@ -400,7 +482,41 @@ function speakArabic(text) {
   let showMean = true;
   let started = false;
   let hintTimeoutId = null; // prevents stale hint reveal when tapping quickly
+  let menuOpen = false;
   
+  function positionMenu(){
+    if (!corner || !cornerMenu) return;
+    const rect = corner.getBoundingClientRect();
+    const top = (rect.bottom || 0) + 8;
+    const left = rect.left ? (rect.left + (rect.width || 0)/2) : (window.innerWidth / 2);
+    cornerMenu.style.top = `${top}px`;
+    cornerMenu.style.left = `${left}px`;
+    cornerMenu.style.transform = "translateX(-50%)";
+  }
+
+  function closeMenu(){
+    menuOpen = false;
+    if (cornerMenu) cornerMenu.style.display = "none";
+  }
+
+  function openMenu(){
+    if (hintTimeoutId !== null) {
+      clearTimeout(hintTimeoutId);
+      hintTimeoutId = null;
+    }
+    menuOpen = true;
+    if (cornerMenu) cornerMenu.style.display = "block";
+    positionMenu();
+  }
+
+  function toggleMenu(){
+    if (menuOpen) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  }
+
   function toggleAudio(ev){
   ev.stopPropagation();
   audioOn = !audioOn;
@@ -595,40 +711,42 @@ function getVerseKey(w) {
    corner.style.top = "calc(12px + env(safe-area-inset-top, 0px))";
   }
 
-function nextWord(){
-  if(!started) return;
+  function nextWord(){
+    if(!started) return;
+    if(menuOpen) return;
+    if (splash && splash.style.display !== "none") return;
 
-  const cur = wordsFlat[idx];
-  if (!cur) return;
+    const cur = wordsFlat[idx];
+    if (!cur) return;
 
-  // If we're currently resting on the verse, next tap moves on
-  if (inVersePause) {
-    inVersePause = false;
-    render();
-    // Now actually advance to the next word (first of next verse)
-    idx = Math.min(idx + 1, wordsFlat.length);
+    // If we're currently resting on the verse, next tap moves on
+    if (inVersePause) {
+      inVersePause = false;
+      render();
+      // Now actually advance to the next word (first of next verse)
+      idx = Math.min(idx + 1, wordsFlat.length);
+      render();
+      const now = wordsFlat[idx];
+      if (now) speakArabic(now.arabic);
+      return;
+    }
+
+    // Look ahead: if next word is in a different verse (or doesn't exist), we pause
+    const next = wordsFlat[idx + 1];
+    const isEndOfVerse = (!next) || (next.verse_key !== cur.verse_key);
+
+    if (isEndOfVerse) {
+      inVersePause = true;
+      render();          // show the full verse
+      return;            // do NOT advance yet
+    }
+
+    // Normal advance within verse
+    idx += 1;
     render();
     const now = wordsFlat[idx];
     if (now) speakArabic(now.arabic);
-    return;
   }
-
-  // Look ahead: if next word is in a different verse (or doesn't exist), we pause
-  const next = wordsFlat[idx + 1];
-  const isEndOfVerse = (!next) || (next.verse_key !== cur.verse_key);
-
-  if (isEndOfVerse) {
-    inVersePause = true;
-    render();          // show the full verse
-    return;            // do NOT advance yet
-  }
-
-  // Normal advance within verse
-  idx += 1;
-  render();
-  const now = wordsFlat[idx];
-  if (now) speakArabic(now.arabic);
-}
 
   function togglePron(ev){
     ev.stopPropagation();
@@ -644,62 +762,9 @@ function nextWord(){
   }
 
   async function init(){
-    // Choose random surah 1..114 using cryptographic randomness in the browser.
     chapterNumber = cryptoRandomInt(1,114);
-    splashLine.textContent = `Random surah selected: ${chapterNumber}. Fetchingâ€¦`;
-
-    const verses = await fetchAllVersesByChapter(chapterNumber);
-
-    // Prefer verse-level translations if provided by the API
-    // Use temporary arrays (parts) to avoid mixing strings and arrays (which caused `.push` on string errors)
-    const verseTextParts = {};
-    const verseEngParts = {};
-
-    for (const v of verses) {
-      const k = v.verse_key || `${v.chapter_id}:${v.verse_number}`;
-      // Arabic words (keep as array parts)
-      const words = Array.isArray(v.words) ? v.words.map(w => w.text_uthmani || "").filter(Boolean) : [];
-      if (words.length) verseTextParts[k] = (verseTextParts[k] ?? []).concat(words);
-
-      // Try verse-level translations first (API sometimes provides `translations` or `translation` fields)
-      let eng = "";
-      if (v.translations && v.translations.length) {
-        eng = v.translations.map(t => t.text || "").join(" ");
-      } else if (v.translation && v.translation.text) {
-        eng = v.translation.text;
-      } else if (v.translated_text) {
-        eng = v.translated_text;
-      }
-      if (eng) verseEngParts[k] = (verseEngParts[k] ?? []).concat(sanitizeEnglish(eng));
-    }
-
-    // Flatten words for word-by-word navigation
-    wordsFlat = flattenWords(verses);
-
-    // For any verse that lacks a verse-level English text, fall back to joining per-word meanings
-    for (const w of wordsFlat) {
-      const k = getVerseKey(w);
-      if (!k) continue;
-      // Only build Arabic fallback if we didn't already collect the verse words
-      const hasVerseText = Array.isArray(verseTextParts[k]) && verseTextParts[k].length > 0;
-      if (!hasVerseText) {
-        verseTextParts[k] = (verseTextParts[k] ?? []).concat(w.arabic);
-      }
-      if (!verseEngParts[k]) verseEngParts[k] = [];
-      if (!verseEngParts[k].length) verseEngParts[k].push(sanitizeEnglish(w.meaning));
-    }
-
-    // Finalize maps into joined strings
-    verseTextByKey = {};
-    verseEngByKey = {};
-    for (const k in verseTextParts) {
-      verseTextByKey[k] = Array.isArray(verseTextParts[k]) ? verseTextParts[k].join(" ") : String(verseTextParts[k] || "");
-    }
-    for (const k in verseEngParts) {
-      verseEngByKey[k] = sanitizeEnglish(Array.isArray(verseEngParts[k]) ? verseEngParts[k].join(" ").replace(/\s+/g, " ").trim() : String(verseEngParts[k] || ""));
-    }
-
-    splashLine.textContent = `Ready. Surah ${chapterNumber} Â· ${wordsFlat.length} words`;
+    splashLine.textContent = `Random surah selected: ${chapterNumber}. Fetching…`;
+    await loadSurah(chapterNumber, { autoStart: false });
   }
 
 function arabicForTTS(text) {
@@ -750,8 +815,99 @@ function getApproxMeaning(cur) {
     return "";
   }
 }
+  async function loadSurah(chNum, { autoStart = true } = {}) {
+    try { if (window.speechSynthesis && speechSynthesis.cancel) speechSynthesis.cancel(); } catch(e) {}
+    if (hintTimeoutId !== null) {
+      clearTimeout(hintTimeoutId);
+      hintTimeoutId = null;
+    }
+    closeMenu();
+    menuOpen = false;
+    idx = 0;
+    inVersePause = false;
+    const target = Math.min(114, Math.max(1, Number(chNum) || 1));
+    chapterNumber = target;
+    started = !!autoStart;
+    splash.style.display = "block";
+    splashLine.textContent = `Loading surah ${chapterNumber}…`;
+    bar.style.width = "0%";
+    reader.style.display = "none";
+    corner.style.display = "none";
 
-  function start(){
+    let verses;
+    try {
+      verses = await fetchAllVersesByChapter(chapterNumber);
+    } catch(e) {
+      splashLine.innerHTML = `<span class="err">Couldn't load the surah (${String(e.message || e)}).</span>`;
+      startBtn.textContent = "Retry";
+      startBtn.onclick = async (ev) => { ev.stopPropagation(); bar.style.width = "0%"; splashLine.textContent = "Retrying…"; await loadSurah(chapterNumber, { autoStart: false }); };
+      return;
+    }
+
+    const verseTextParts = {};
+    const verseEngParts = {};
+
+    for (const v of verses) {
+      const k = v.verse_key || `${v.chapter_id}:${v.verse_number}`;
+      const words = Array.isArray(v.words) ? v.words.map(w => w.text_uthmani || "").filter(Boolean) : [];
+      if (words.length) verseTextParts[k] = (verseTextParts[k] ?? []).concat(words);
+
+      let eng = "";
+      if (v.translations && v.translations.length) {
+        eng = v.translations.map(t => t.text || "").join(" ");
+      } else if (v.translation && v.translation.text) {
+        eng = v.translation.text;
+      } else if (v.translated_text) {
+        eng = v.translated_text;
+      }
+      if (eng) verseEngParts[k] = (verseEngParts[k] ?? []).concat(sanitizeEnglish(eng));
+    }
+
+    wordsFlat = flattenWords(verses);
+
+    for (const w of wordsFlat) {
+      const k = getVerseKey(w);
+      if (!k) continue;
+      const hasVerseText = Array.isArray(verseTextParts[k]) && verseTextParts[k].length > 0;
+      if (!hasVerseText) {
+        verseTextParts[k] = (verseTextParts[k] ?? []).concat(w.arabic);
+      }
+      if (!verseEngParts[k]) verseEngParts[k] = [];
+      if (!verseEngParts[k].length) verseEngParts[k].push(sanitizeEnglish(w.meaning));
+    }
+
+    verseTextByKey = {};
+    verseEngByKey = {};
+    for (const k in verseTextParts) {
+      verseTextByKey[k] = Array.isArray(verseTextParts[k]) ? verseTextParts[k].join(" ") : String(verseTextParts[k] || "");
+    }
+    for (const k in verseEngParts) {
+      verseEngByKey[k] = sanitizeEnglish(Array.isArray(verseEngParts[k]) ? verseEngParts[k].join(" ").replace(/\s+/g, " ").trim() : String(verseEngParts[k] || ""));
+    }
+
+    if (!autoStart) {
+      started = false;
+      splashLine.textContent = `Ready. Surah ${chapterNumber} • ${wordsFlat.length} words`;
+      startBtn.textContent = "Start";
+      return;
+    }
+
+    splash.style.display = "none";
+    corner.style.display = "block";
+    reader.style.display = "block";
+    idx = 0;
+    render();
+    const cur = wordsFlat[idx];
+    if (cur) speakArabic(cur.arabic);
+  }
+  async function start() {
+    closeMenu();
+    menuOpen = false;
+    if (!wordsFlat || !wordsFlat.length) {
+      const fallback = chapterNumber || cryptoRandomInt(1,114);
+      await loadSurah(fallback, { autoStart: true });
+      return;
+    }
     started = true;
     splash.style.display = "none";
     corner.style.display = "block";
@@ -766,7 +922,16 @@ if (cur) speakArabic(cur.arabic);
 
   // Events
   // Use a single pointer handler to avoid mobile double-fire (touchstart+click)
-  document.addEventListener("pointerdown", () => nextWord());
+  function handlePointerDown(ev){
+    if (menuOpen) {
+      if (cornerMenu && !cornerMenu.contains(ev.target) && ev.target !== corner) {
+        closeMenu();
+      }
+      return;
+    }
+    nextWord();
+  }
+  document.addEventListener("pointerdown", handlePointerDown);
 
   // Prevent pointer events on controls from bubbling to the document
   const stopAnd = (fn) => (ev) => { ev.stopPropagation(); fn(ev); };
@@ -774,6 +939,25 @@ if (cur) speakArabic(cur.arabic);
   tglMean.addEventListener("pointerdown", stopAnd(toggleMean));
   tglAudio.addEventListener("pointerdown", stopAnd(toggleAudio));
   startBtn.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); start(); });
+
+  if (corner) corner.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); toggleMenu(); positionMenu(); });
+  if (cornerMenu) cornerMenu.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+  if (btnCloseMenu) btnCloseMenu.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); closeMenu(); });
+  if (btnRandom) btnRandom.addEventListener("pointerdown", async (ev) => { ev.stopPropagation(); await loadSurah(cryptoRandomInt(1,114), { autoStart: true }); });
+  if (btnReplay) btnReplay.addEventListener("pointerdown", async (ev) => { ev.stopPropagation(); await loadSurah(chapterNumber || 1, { autoStart: true }); });
+  if (btnLoad) btnLoad.addEventListener("pointerdown", async (ev) => {
+    ev.stopPropagation();
+    const val = Number(surahInput && surahInput.value ? surahInput.value : chapterNumber || 1);
+    const target = Math.min(114, Math.max(1, val || 1));
+    await loadSurah(target, { autoStart: true });
+  });
+  if (surahInput) surahInput.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && menuOpen) {
+      closeMenu();
+    }
+  });
+  window.addEventListener("resize", () => { if (menuOpen) positionMenu(); });
 
   // Boot
   (async () => {
@@ -795,5 +979,34 @@ if (cur) speakArabic(cur.arabic);
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
