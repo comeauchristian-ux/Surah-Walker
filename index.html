@@ -328,15 +328,15 @@ function chooseAndApplyBackgrounds() {
   body.classList.add(`tod-${tod}`);
 
   const makePath = (filename) => `${BG_BASE_PATH}/${filename}`;
-  let walkPath = "scenic-pixel-hike.png";
+  let walkPath = makePath("scenic-pixel-hike.png");
   let pausePath = walkPath;
   if (tod === "night") {
-    walkPath = makePath("night_pause.png");
-    pausePath = makePath("night_resting.png");
+    walkPath = makePath("night_walk.png");
+    pausePath = walkPath;
   } else {
     const setting = chosenSetting || bgSettings[0];
     walkPath = makePath(`${setting}_${tod}_walk.png`);
-    pausePath = makePath(`${setting}_${tod}_pause.png`);
+    pausePath = walkPath;
   }
 
   body.style.setProperty("--bg-img-walk", `url("${walkPath}")`);
