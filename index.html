@@ -64,16 +64,19 @@
       z-index:1; /* keep content above blurred background layer */
     }
     .corner{
-      position:absolute;
-      top:14px;
-      left:14px;
-      padding-top: env(safe-area-inset-top);
+      position:fixed;
+      top:calc(10px + env(safe-area-inset-top, 0px));
+      left:calc(12px + env(safe-area-inset-left, 0px));
+      padding:6px 10px;
       font-size:14px;
       color:#e2e8f0;
       letter-spacing:.2px;
       user-select:none;
       z-index:12000; /* keep progress visible above overlays */
       text-shadow:0 1px 6px rgba(0,0,0,0.45);
+      background:rgba(0,0,0,0.32);
+      border:1px solid rgba(255,255,255,0.18);
+      border-radius:12px;
     }
     .corner b{color:white;font-weight:650}
     .center{
