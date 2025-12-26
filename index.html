@@ -171,6 +171,47 @@
       display:flex;flex-direction:column;align-items:center;justify-content:center;
       gap:18px;
     }
+    #library{
+      align-items:center;
+      justify-content:center;
+      padding:12px;
+    }
+    .libraryStage{
+      position:relative;
+      width:min(1200px, 96vw);
+      max-width:100%;
+    }
+    .libraryBg{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:18px;
+      box-shadow:0 12px 36px rgba(0,0,0,0.28);
+    }
+    .hotspot{
+      position:absolute;
+      border:0;
+      padding:0;
+      margin:0;
+      background:transparent;
+      cursor:pointer;
+    }
+    .hotspotLabel{
+      display:none;
+      font-size:12px;
+      color:white;
+      background:rgba(0,0,0,0.6);
+      padding:3px 6px;
+      border-radius:6px;
+      pointer-events:none;
+      position:absolute;
+      top:4px;left:4px;
+    }
+    body.debug-hotspots .hotspot{
+      outline:2px dashed rgba(255,255,255,0.8);
+      background:rgba(255,215,74,0.18);
+    }
+    body.debug-hotspots .hotspotLabel{ display:block; }
     .card{
       width:min(520px, 86vw);
       background:rgba(0,0,0,.14);
@@ -218,6 +259,16 @@
 </head>
 <body>
   <div class="wrap" id="app">
+  
+    <div class="screen" id="library">
+      <div class="libraryStage" id="libraryStage">
+        <img
+          class="libraryBg"
+          src="assets/ui/library-1920.png"
+          alt="Library bookshelf"
+        />
+      </div>
+    </div>
   
     <div class="screen" id="splash">
       <div class="card">
@@ -293,6 +344,15 @@
   const fullMeanEl = el("fullMean");
   const tglAudio = el("tglAudio");
   const hintEl = el("hint");
+  const libraryStage = el("libraryStage");
+  const libraryScreen = el("library");
+
+  const screens = ["library", "splash", "reader"];
+  const STORAGE_KEYS = {
+    lastSurah: "surahWalker:lastSurah",
+    lastWordIndex: "surahWalker:lastWordIndex",
+    toggles: "surahWalker:readerToggles"
+  };
 
 let audioOn = false;
 let voiceAr = null;
@@ -309,6 +369,15 @@ const baseDir = pathName.endsWith("/")
 const BG_BASE_PATH = `${baseDir.replace(/\/+$/, "/")}assets/bg`;
 let chosenSetting = null;
 let chosenTimeOfDay = null;
+
+function showScreen(name) {
+  screens.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = (id === name) ? "flex" : "none";
+  });
+  corner.style.display = name === "reader" ? "block" : "none";
+}
 
 function pickTimeOfDaySlot() {
   const hour = new Date().getHours();
@@ -343,7 +412,87 @@ function chooseAndApplyBackgrounds() {
   body.style.setProperty("--bg-img-pause", `url("${pausePath}")`);
 }
 
+loadStoredPreferences();
 chooseAndApplyBackgrounds();
+
+const hotspotDefs = [
+  { id: "random", action: "random", left: 4, top: 10, width: 13, height: 46, label: "Random" },
+  { id: "range-1", action: "range", left: 20, top: 14, width: 4.5, height: 40, label: "1", min: 1, max: 9 },
+  { id: "range-10", action: "range", left: 25.5, top: 14, width: 4.5, height: 40, label: "10", min: 10, max: 19 },
+  { id: "range-20", action: "range", left: 31, top: 14, width: 4.5, height: 40, label: "20", min: 20, max: 29 },
+  { id: "range-30", action: "range", left: 36.5, top: 14, width: 4.5, height: 40, label: "30", min: 30, max: 39 },
+  { id: "range-40", action: "range", left: 43, top: 14, width: 4.5, height: 40, label: "40", min: 40, max: 49 },
+  { id: "range-50", action: "range", left: 48.5, top: 14, width: 4.5, height: 40, label: "50", min: 50, max: 59 },
+  { id: "range-60", action: "range", left: 54, top: 14, width: 4.5, height: 40, label: "60", min: 60, max: 69 },
+  { id: "range-70", action: "range", left: 59.5, top: 14, width: 4.5, height: 40, label: "70", min: 70, max: 79 },
+  { id: "range-80", action: "range", left: 66, top: 14, width: 4.5, height: 40, label: "80", min: 80, max: 89 },
+  { id: "range-90", action: "range", left: 71.5, top: 14, width: 4.5, height: 40, label: "90+", min: 90, max: 114 },
+  { id: "favorites", action: "favorites", left: 78, top: 13, width: 9, height: 42, label: "Favorites" },
+  { id: "continue", action: "continue", left: 9, top: 70, width: 28, height: 20, label: "Continue" },
+  { id: "journal", action: "journal", left: 44, top: 63, width: 20, height: 16, label: "Journal" },
+  { id: "settings", action: "settings", left: 69, top: 60, width: 17, height: 30, label: "Settings" }
+];
+
+function buildLibraryHotspots(){
+  if(!libraryStage) return;
+  hotspotDefs.forEach(h => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "hotspot";
+    btn.dataset.action = h.action;
+    btn.dataset.id = h.id;
+    if(h.min !== undefined) btn.dataset.min = String(h.min);
+    if(h.max !== undefined) btn.dataset.max = String(h.max);
+    btn.style.left = `${h.left}%`;
+    btn.style.top = `${h.top}%`;
+    btn.style.width = `${h.width}%`;
+    btn.style.height = `${h.height}%`;
+    const label = document.createElement("span");
+    label.className = "hotspotLabel";
+    label.textContent = h.label || h.id;
+    btn.appendChild(label);
+    libraryStage.appendChild(btn);
+  });
+}
+
+buildLibraryHotspots();
+
+function handleLibraryClick(ev){
+  const target = ev.target.closest(".hotspot");
+  if(!target) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  const action = target.dataset.action;
+  switch(action){
+    case "random":
+      startRandom();
+      break;
+    case "continue":
+      startContinue();
+      break;
+    case "range": {
+      const min = Number(target.dataset.min);
+      const max = Number(target.dataset.max);
+      startRange(min, max);
+      break;
+    }
+    case "favorites":
+      openFavorites();
+      break;
+    case "journal":
+      openJournal();
+      break;
+    case "settings":
+      openSettings();
+      break;
+    default:
+      break;
+  }
+}
+
+if(libraryStage){
+  libraryStage.addEventListener("pointerdown", handleLibraryClick);
+}
 
 function pickArabicVoice() {
   const voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
@@ -388,14 +537,56 @@ function speakArabic(text) {
   let showPron = true;
   let showMean = true;
   let started = false;
+  let savedSurahNumber = null;
+  let savedWordIndex = 0;
+
+  const clampIndex = (i) => {
+    if (!wordsFlat.length) return 0;
+    return Math.max(0, Math.min(wordsFlat.length - 1, i));
+  };
+
+  function loadStoredPreferences(){
+    try{
+      const rawToggles = localStorage.getItem(STORAGE_KEYS.toggles);
+      if(rawToggles){
+        const toggles = JSON.parse(rawToggles);
+        if(typeof toggles.showPron === "boolean") showPron = toggles.showPron;
+        if(typeof toggles.showMean === "boolean") showMean = toggles.showMean;
+        if(typeof toggles.audioOn === "boolean") audioOn = toggles.audioOn;
+      }
+      const savedSurah = Number(localStorage.getItem(STORAGE_KEYS.lastSurah));
+      if(Number.isFinite(savedSurah)) savedSurahNumber = savedSurah;
+      const savedIdx = Number(localStorage.getItem(STORAGE_KEYS.lastWordIndex));
+      if(Number.isFinite(savedIdx)) savedWordIndex = savedIdx;
+    } catch(e){
+      // Ignore storage errors (private mode, etc.)
+    }
+  }
+
+  function saveProgress(){
+    if(chapterNumber === null || chapterNumber === undefined) return;
+    try{
+      localStorage.setItem(STORAGE_KEYS.lastSurah, String(chapterNumber));
+      localStorage.setItem(STORAGE_KEYS.lastWordIndex, String(idx || 0));
+      localStorage.setItem(STORAGE_KEYS.toggles, JSON.stringify({ showPron, showMean, audioOn }));
+      savedSurahNumber = chapterNumber;
+      savedWordIndex = idx || 0;
+    } catch(e){
+      // Ignore storage errors
+    }
+  }
   
   function toggleAudio(ev){
   ev.stopPropagation();
   audioOn = !audioOn;
   // Optional: visually indicate state
-  tglAudio.style.background = audioOn ? "rgba(212,175,55,.20)" : "rgba(0,0,0,.12)";
-  tglAudio.style.borderColor = audioOn ? "rgba(212,175,55,.55)" : "rgba(255,255,255,.18)";
+  syncAudioToggleVisual();
+  saveProgress();
 }
+  function syncAudioToggleVisual(){
+    tglAudio.style.background = audioOn ? "rgba(212,175,55,.20)" : "rgba(0,0,0,.12)";
+    tglAudio.style.borderColor = audioOn ? "rgba(212,175,55,.55)" : "rgba(255,255,255,.18)";
+  }
 
   function cryptoRandomInt(minInclusive, maxInclusive){
     const span = maxInclusive - minInclusive + 1;
@@ -473,6 +664,7 @@ function getVerseKey(w) {
       meanEl.textContent = "";
       cornerRef.textContent = `${chapterNumber}:end`;
       cornerProg.textContent = `done`;
+      saveProgress();
       return;
     }
   if (inVersePause) {
@@ -509,6 +701,7 @@ function getVerseKey(w) {
     corner.style.transform = "translateX(-50%)";
     corner.style.top = "8px";
 
+    saveProgress();
     return;
   }
 
@@ -554,6 +747,8 @@ function getVerseKey(w) {
    corner.style.left = "14px";
    corner.style.transform = "none";
    corner.style.top = "14px";
+
+   saveProgress();
   }
 
 function nextWord(){
@@ -596,18 +791,24 @@ function nextWord(){
     showPron = !showPron;
     console.debug('togglePron ->', showPron, 'idx=', idx, 'translit=', (wordsFlat[idx] && wordsFlat[idx].translit));
     render();
+    saveProgress();
   }
   function toggleMean(ev){
     ev.stopPropagation();
     showMean = !showMean;
     console.debug('toggleMean ->', showMean, 'idx=', idx, 'meaning=', (wordsFlat[idx] && wordsFlat[idx].meaning));
     render();
+    saveProgress();
   }
 
-  async function init(){
-    // Choose random surah 1..114 using cryptographic randomness in the browser.
-    chapterNumber = cryptoRandomInt(1,114);
-    splashLine.textContent = `Random surah selected: ${chapterNumber}. Fetching…`;
+  async function init(chNum){
+    // Accept caller-provided chapter; otherwise choose randomly.
+    chapterNumber = (chNum !== undefined && chNum !== null) ? chNum : cryptoRandomInt(1,114);
+    splashLine.textContent = `Loading Surah ${chapterNumber}…`;
+    wordsFlat = [];
+    idx = 0;
+    inVersePause = false;
+    started = false;
 
     const verses = await fetchAllVersesByChapter(chapterNumber);
 
@@ -712,18 +913,64 @@ function getApproxMeaning(cur) {
   }
 }
 
-  function start(){
+  function start(startIndex = 0){
     started = true;
-    splash.style.display = "none";
-    corner.style.display = "block";
-    reader.style.display = "block";
-    idx = 0;
-    showPron = true;
-    showMean = true;
+    inVersePause = false;
+    idx = clampIndex(startIndex);
+    startBtn.dataset.mode = "default";
+    showScreen("reader");
+    syncAudioToggleVisual();
     render();
-	const cur = wordsFlat[idx];
-if (cur) speakArabic(cur.arabic);
+    const cur = wordsFlat[idx];
+    if (cur) speakArabic(cur.arabic);
   }
+
+  async function loadAndStartSurah(chapter, startAtIndex = 0){
+    showScreen("splash");
+    bar.style.width = "0%";
+    startBtn.dataset.mode = "default";
+    startBtn.textContent = "Start";
+    startBtn.onclick = null;
+    splashLine.textContent = `Loading Surah ${chapter}…`;
+    try{
+      await init(chapter);
+      start(startAtIndex);
+    } catch(e){
+      splashLine.innerHTML = `<span class="err">Couldn't load the surah (${String(e.message || e)}).</span><br><span class="small">You need an internet connection, and the API must allow your browser (CORS).</span>`;
+      startBtn.textContent = "Back to Library";
+      startBtn.dataset.mode = "back-to-library";
+      startBtn.onclick = (ev) => { ev.stopPropagation(); showScreen("library"); };
+      console.error(e);
+    }
+  }
+
+  function startRandom(){
+    const ch = cryptoRandomInt(1,114);
+    loadAndStartSurah(ch, 0);
+  }
+
+  function startContinue(){
+    if(Number.isFinite(savedSurahNumber)){
+      loadAndStartSurah(savedSurahNumber, clampIndex(savedWordIndex || 0));
+    } else {
+      startRandom();
+    }
+  }
+
+  function startRange(min, max){
+    const minNum = Number(min);
+    const maxNum = Number(max);
+    if(Number.isFinite(minNum) && Number.isFinite(maxNum) && maxNum >= minNum){
+      const ch = cryptoRandomInt(minNum, maxNum);
+      loadAndStartSurah(ch, 0);
+    } else {
+      startRandom();
+    }
+  }
+
+  function openFavorites(){ alert("Favorites coming soon."); }
+  function openJournal(){ alert("Journal coming soon."); }
+  function openSettings(){ alert("Settings coming soon."); }
 
   // Events
   // Use a single pointer handler to avoid mobile double-fire (touchstart+click)
@@ -734,23 +981,26 @@ if (cur) speakArabic(cur.arabic);
   tglPron.addEventListener("pointerdown", stopAnd(togglePron));
   tglMean.addEventListener("pointerdown", stopAnd(toggleMean));
   tglAudio.addEventListener("pointerdown", stopAnd(toggleAudio));
-  startBtn.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); start(); });
+  startBtn.addEventListener("pointerdown", (ev) => {
+    ev.stopPropagation();
+    const mode = startBtn.dataset.mode || "default";
+    if(mode === "back-to-library"){
+      showScreen("library");
+      return;
+    }
+    if(wordsFlat.length){
+      start(idx);
+    } else {
+      startRandom();
+    }
+  });
 
   // Boot
   (async () => {
-    try{
-      await init();
-    } catch(e){
-      splashLine.innerHTML = `<span class="err">Couldn’t load the surah (${String(e.message || e)}).</span><br><span class="small">You need an internet connection, and the API must allow your browser (CORS).</span>`;
-      startBtn.textContent = "Retry";
-      startBtn.onclick = async (ev) => {
-        ev.stopPropagation();
-        bar.style.width = "0%";
-        splashLine.textContent = "Retrying…";
-        try{ await init(); } catch(err){ splashLine.textContent = String(err.message || err); }
-      };
-      return;
-    }
+    syncAudioToggleVisual();
+    startBtn.dataset.mode = "default";
+    splashLine.textContent = "Select a surah to begin.";
+    showScreen("library");
   })();
 })();
 </script>
