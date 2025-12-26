@@ -65,9 +65,10 @@
     }
     .corner{
       position:fixed;
-      top:calc(10px + env(safe-area-inset-top, 0px));
-      left:calc(12px + env(safe-area-inset-left, 0px));
-      padding:6px 10px;
+      top:calc(12px + env(safe-area-inset-top, 0px));
+      left:50%;
+      transform:translateX(-50%);
+      padding:8px 12px;
       font-size:14px;
       color:#e2e8f0;
       letter-spacing:.2px;
@@ -526,7 +527,7 @@ function getVerseKey(w) {
     // Center the corner reference horizontally while paused
     corner.style.left = "50%";
     corner.style.transform = "translateX(-50%)";
-    corner.style.top = "8px";
+    corner.style.top = "calc(12px + env(safe-area-inset-top, 0px))";
 
     return;
   }
@@ -589,9 +590,9 @@ function getVerseKey(w) {
   }, HINT_DELAY_MS);
 
    // Restore corner position
-   corner.style.left = "14px";
-   corner.style.transform = "none";
-   corner.style.top = "14px";
+   corner.style.left = "50%";
+   corner.style.transform = "translateX(-50%)";
+   corner.style.top = "calc(12px + env(safe-area-inset-top, 0px))";
   }
 
 function nextWord(){
