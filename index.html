@@ -358,7 +358,7 @@
   // We'll fetch per_page=50 and paginate until done.
   const API_BASE = "https://api.quran.com/api/v4";
   const TRANSLATION_ID = 20; // prefer a common English translation (fallbacks will still work)
-  const HINT_DELAY_MS = 750;
+  const HINT_DELAY_MS = 1250;
 
   const el = (id) => document.getElementById(id);
 
@@ -763,7 +763,7 @@ function getVerseKey(w) {
 
   async function init(){
     chapterNumber = cryptoRandomInt(1,114);
-    splashLine.textContent = `Random surah selected: ${chapterNumber}. Fetching…`;
+    splashLine.textContent = `Random surah selected: ${chapterNumber}. Fetchingï¿½`;
     await loadSurah(chapterNumber, { autoStart: false });
   }
 
@@ -829,7 +829,7 @@ function getApproxMeaning(cur) {
     chapterNumber = target;
     started = !!autoStart;
     splash.style.display = "block";
-    splashLine.textContent = `Loading surah ${chapterNumber}…`;
+    splashLine.textContent = `Loading surah ${chapterNumber}ï¿½`;
     bar.style.width = "0%";
     reader.style.display = "none";
     corner.style.display = "none";
@@ -840,7 +840,7 @@ function getApproxMeaning(cur) {
     } catch(e) {
       splashLine.innerHTML = `<span class="err">Couldn't load the surah (${String(e.message || e)}).</span>`;
       startBtn.textContent = "Retry";
-      startBtn.onclick = async (ev) => { ev.stopPropagation(); bar.style.width = "0%"; splashLine.textContent = "Retrying…"; await loadSurah(chapterNumber, { autoStart: false }); };
+      startBtn.onclick = async (ev) => { ev.stopPropagation(); bar.style.width = "0%"; splashLine.textContent = "Retryingï¿½"; await loadSurah(chapterNumber, { autoStart: false }); };
       return;
     }
 
@@ -887,7 +887,7 @@ function getApproxMeaning(cur) {
 
     if (!autoStart) {
       started = false;
-      splashLine.textContent = `Ready. Surah ${chapterNumber} • ${wordsFlat.length} words`;
+      splashLine.textContent = `Ready. Surah ${chapterNumber} ï¿½ ${wordsFlat.length} words`;
       startBtn.textContent = "Start";
       return;
     }
