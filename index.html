@@ -614,17 +614,14 @@ function getVerseKey(w) {
     document.body.classList.add("resting");
     const k = getVerseKey(cur);
 
-    // Show Arabic verse (smaller) and the full English translation centered
+    // Show Arabic verse (smaller); hide English translation during pause
     wordEl.style.display = "block";
     wordEl.textContent = verseTextByKey[k] || cur.arabic || "…";
     wordEl.style.fontSize = "34px";
     wordEl.style.lineHeight = "1.4";
 
-    fullMeanEl.style.display = "block";
-    fullMeanEl.textContent = verseEngByKey[k] || verseTextByKey[k] || cur.arabic || "…";
-    fullMeanEl.style.fontSize = "20px";
-    fullMeanEl.style.lineHeight = "1.5";
-    fullMeanEl.style.textAlign = "center";
+    fullMeanEl.style.display = "none";
+    fullMeanEl.textContent = "";
 
     // Also show a subtle English hint in the hint area (more transparent)
     if (hintEl) {
@@ -982,7 +979,6 @@ if (cur) speakArabic(cur.arabic);
 </script>
 </body>
 </html>
-
 
 
 
