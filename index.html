@@ -43,12 +43,6 @@
       pointer-events:none;
     }
 
-    /* Time-of-day hooks (only swap images; no overlays) */
-    body.tod-dawn{}
-    body.tod-day{}
-    body.tod-dusk{}
-    body.tod-night{}
-
 	body.resting {
       background: var(--bg-img-pause);
       background-size: cover;
@@ -794,27 +788,19 @@ function getVerseKey(w) {
     await loadSurah(chapterNumber, { autoStart: false });
   }
 
-function arabicForTTS(text) {
-  return text
+  function arabicForTTS(text) {
+  return String(text || "")
     // Remove tatweel
     .replace(/\u0640/g, "")
 
-    // Remove Arabic harakat (diacritics)
-    .replace(/[\u064B-\u065F\u0670]/g, "")
-
-    // Remove Qur'anic annotation marks (common ranges)
-    // - Arabic small high ligatures & Quranic signs often live here:
+    // Remove Qur'anic annotation marks (stops, small signs, etc.)
     .replace(/[\u06D6-\u06ED]/g, "")
-
-    // Optional: remove Arabic punctuation-like marks if your engine chokes on them
     .replace(/[۝۞۩]/g, "")
 
-    // Normalize extra whitespace
+    // Normalize whitespace
     .replace(/\s+/g, " ")
-
-	.replace(/\u064C/g, "")
     .trim();
-	}
+}
 
 // Strip any HTML/footnote content starting at the first '<' and normalize whitespace
 function sanitizeEnglish(s) {
