@@ -215,7 +215,7 @@
       user-select:none;text-align:center;max-width:72%;line-height:1.4;opacity:0.95;
     }
     /* bottom-centered toggles pinned to viewport (avoid overlapping center content) */
-    .subrow.toggles{ position:fixed; bottom:34px; left:50%; transform:translateX(-50%); gap:18px; z-index:10000; }
+    .subrow.controls{ position:fixed; bottom:34px; left:50%; transform:translateX(-50%); gap:18px; z-index:10000; }
 
     #fullMean{ color:rgba(203,213,225,0.86); max-width:82%; font-size:16px; margin:12px auto 0; text-align:center; padding:0 18px; opacity:0.92; transition:opacity .18s ease, transform .18s ease; }
     #pron, #mean{ font-size:16px; color:rgba(203,213,225,0.78); margin-top:18px; opacity:0.9; transition:opacity .18s ease, transform .18s ease; position:relative; z-index:2000; }
@@ -304,7 +304,7 @@
         <div class="loadingbar" aria-hidden="true"><div id="bar"></div></div>
         <div class="btn" id="startBtn">Start</div>
         <p class="small" style="margin-top:10px;color:var(--muted2)">
-          Tap anywhere to advance word-by-word. 🔊 = transliteration, 🌐 = meaning.
+          Tap anywhere to advance word-by-word.
         </p>
       </div>
     </div>
@@ -326,10 +326,10 @@
     <div class="center" id="reader" style="display:none">
       <div class="arabic" id="word">…</div>
 
-      <div class="subrow toggles">
-        <div class="pill" id="tglAudio" title="Toggle audio">🗣️</div>
-        <div class="pill" id="tglPron" title="Toggle pronunciation">🔊</div>
-        <div class="pill" id="tglMean" title="Toggle meaning">🌐</div>
+      <div class="subrow controls">
+        <div class="pill" id="tglAudio" title="Voice on/off">🗣️</div>
+        <div class="pill" id="btnRepeat" title="Repeat word">🔁</div>
+        <div class="pill" id="tglAuto" title="Auto advance">Auto</div>
       </div> 
 
       <div class="subrow" style="margin-top:8px">
@@ -403,12 +403,12 @@
 
   const reader = el("reader");
   const wordEl = el("word");
-  const tglPron = el("tglPron");
-  const tglMean = el("tglMean");
   const pronEl = el("pron");
   const meanEl = el("mean");
   const fullMeanEl = el("fullMean");
   const tglAudio = el("tglAudio");
+  const btnRepeat = el("btnRepeat");
+  const tglAuto = el("tglAuto");
   const hintEl = el("hint");
 
 let audioOn = false;
@@ -416,6 +416,10 @@ let voiceAr = null;
 let inVersePause = false;
 let verseTextByKey = {};
 let verseEngByKey = {};
+let autoAdvance = false;
+let autoAdvanceTimeoutId = null;
+let aidsVisible = false;
+const AUTO_ADVANCE_DELAY_MS = 500;
 const timeOfDayClasses = ["tod-dawn","tod-day","tod-dusk","tod-night"];
 const bgSettings = ["beach","countryside","forest","garden","lakeside","mountain"];
 // Derive a stable base so paths work both on GitHub Pages and local dev servers (Live Server)
@@ -549,6 +553,37 @@ function speakArabic(text) {
   tglAudio.style.borderColor = audioOn ? "rgba(212,175,55,.55)" : "rgba(255,255,255,.18)";
 }
 
+  function toggleAuto(ev){
+    ev.stopPropagation();
+    autoAdvance = !autoAdvance;
+    tglAuto.style.background = autoAdvance ? "rgba(212,175,55,.20)" : "rgba(0,0,0,.12)";
+    tglAuto.style.borderColor = autoAdvance ? "rgba(212,175,55,.55)" : "rgba(255,255,255,.18)";
+    if (!autoAdvance) {
+      clearAutoAdvanceTimeout();
+      return;
+    }
+    if (started && !inVersePause && aidsVisible) {
+      scheduleAutoAdvance(AUTO_ADVANCE_DELAY_MS, idx);
+    }
+  }
+
+  function clearAutoAdvanceTimeout(){
+    if (autoAdvanceTimeoutId !== null) {
+      clearTimeout(autoAdvanceTimeoutId);
+      autoAdvanceTimeoutId = null;
+    }
+  }
+
+  function scheduleAutoAdvance(delayMs, expectedIdx){
+    clearAutoAdvanceTimeout();
+    autoAdvanceTimeoutId = setTimeout(() => {
+      if (!autoAdvance) return;
+      if (inVersePause) return;
+      if (idx !== expectedIdx) return;
+      nextWord();
+    }, delayMs);
+  }
+
   function cryptoRandomInt(minInclusive, maxInclusive){
     const span = maxInclusive - minInclusive + 1;
     const buf = new Uint32Array(1);
@@ -622,6 +657,8 @@ function getVerseKey(w) {
       clearTimeout(hintTimeoutId); // cancel prior delayed hint update (stale guard)
       hintTimeoutId = null;
     }
+    clearAutoAdvanceTimeout();
+    aidsVisible = false;
     const cur = wordsFlat[idx];
     if(!cur){
       wordEl.textContent = "✓";
@@ -657,9 +694,9 @@ function getVerseKey(w) {
     meanEl.textContent = "";
     pronEl.style.opacity = 0;
     meanEl.style.opacity = 0;
-    tglPron.style.display = "none";
-    tglMean.style.display = "none";
     tglAudio.style.display = "none";
+    btnRepeat.style.display = "none";
+    tglAuto.style.display = "none";
 
     // Center the corner reference horizontally while paused
     corner.style.left = "50%";
@@ -683,11 +720,10 @@ function getVerseKey(w) {
     cornerProg.textContent = `${cur.globalIndex}/${cur.globalTotal}`;
 
    // Restore toggle buttons and per-word aids (allow CSS to control display)
-   tglPron.style.display = "";
-   tglMean.style.display = "";
-
    // Restore audio toggle
    tglAudio.style.display = "";
+   btnRepeat.style.display = "";
+   tglAuto.style.display = "";
 
    // Restore hint text
    if (hintEl) {
@@ -722,6 +758,10 @@ function getVerseKey(w) {
       meanEl.style.display = "none";
       meanEl.textContent = "";
       meanEl.style.opacity = 0;
+    }
+    aidsVisible = true;
+    if (autoAdvance) {
+      scheduleAutoAdvance(AUTO_ADVANCE_DELAY_MS, idx);
     }
     console.debug('render normal', { idx, showPron, pronText: pronEl.textContent, showMean, meanText: meanEl.textContent, fallbackUsed: !!(showMean && !cur.meaning) });
   }, HINT_DELAY_MS);
@@ -769,17 +809,13 @@ function getVerseKey(w) {
     if (now) speakArabic(now.arabic);
   }
 
-  function togglePron(ev){
+  function repeatWord(ev){
     ev.stopPropagation();
-    showPron = !showPron;
-    console.debug('togglePron ->', showPron, 'idx=', idx, 'translit=', (wordsFlat[idx] && wordsFlat[idx].translit));
+    if (inVersePause) return;
+    if (!started) return;
     render();
-  }
-  function toggleMean(ev){
-    ev.stopPropagation();
-    showMean = !showMean;
-    console.debug('toggleMean ->', showMean, 'idx=', idx, 'meaning=', (wordsFlat[idx] && wordsFlat[idx].meaning));
-    render();
+    const cur = wordsFlat[idx];
+    if (cur) speakArabic(cur.arabic);
   }
 
   async function init(){
@@ -948,9 +984,9 @@ if (cur) speakArabic(cur.arabic);
 
   // Prevent pointer events on controls from bubbling to the document
   const stopAnd = (fn) => (ev) => { ev.stopPropagation(); fn(ev); };
-  tglPron.addEventListener("pointerdown", stopAnd(togglePron));
-  tglMean.addEventListener("pointerdown", stopAnd(toggleMean));
   tglAudio.addEventListener("pointerdown", stopAnd(toggleAudio));
+  btnRepeat.addEventListener("pointerdown", stopAnd(repeatWord));
+  tglAuto.addEventListener("pointerdown", stopAnd(toggleAuto));
   startBtn.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); start(); });
 
   if (corner) corner.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); toggleMenu(); positionMenu(); });
@@ -992,10 +1028,6 @@ if (cur) speakArabic(cur.arabic);
 </script>
 </body>
 </html>
-
-
-
-
 
 
 
